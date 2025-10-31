@@ -53,7 +53,7 @@ class User(AbstractBaseUser, PermissionsMixin, TimestampModel):
 class SocialLogin(TimestampModel):
     PROVIDER_CHOICES = ("naver", "naver")
 
-    user_id = models.ForeignKey(
+    user = models.ForeignKey(
         User, on_delete=models.PROTECT, related_name="social_logins"
     )
 
@@ -89,7 +89,7 @@ class Address(TimestampModel):
         verbose_name = "배송지"
         verbose_name_plural = "배송지 목록"
         ordering = ('-updated_at',) # 최신 내역이 위로 오도록
-        db_table = "" #추후수정~
+        db_table = "addresses"
 
     def str(self):
         return self.address_name
@@ -109,7 +109,7 @@ class Point(TimestampModel):
         verbose_name = "포인트 내역"
         verbose_name_plural = "포인트 내역 목록"
         ordering = ('-updated_at',) # 최신 내역이 위로 오도록
-        db_table = "" #추후수정~
+        db_table = "points" #추후수정~
 
     def str(self):
         return f'잔액: {self.amount}'
