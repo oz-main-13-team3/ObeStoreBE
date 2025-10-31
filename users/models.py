@@ -5,8 +5,6 @@ from django.contrib.auth.models import (
 from django.core.validators import MinLengthValidator
 from utils.models import TimestampModel
 
-    class Meta:
-        abstract = True
 
 class UserManager(BaseUserManager):
     def create_user(self, email, password=None, **extra_fields):
