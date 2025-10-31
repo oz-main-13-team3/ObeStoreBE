@@ -56,7 +56,7 @@ class SocialLogin(TimestampModel):
     PROVIDER_CHOICES = ("naver", "naver")
 
     user_id = models.ForeignKey(
-        User, on_delete=models.CASCADE, related_name="social_logins"
+        User, on_delete=models.PROTECT, related_name="social_logins"
     )
 
     provider = models.CharField(max_length=50, choices=PROVIDER_CHOICES, unique=True, verbose_name="제공자")
