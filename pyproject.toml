@@ -21,6 +21,13 @@ ruff = "^0.14.3"
 black = "^25.9.0"
 pre-commit = "^4.3.0"
 
+[tool.black]
+line-length = 120
+
+[tool.ruff]
+line-length = 120
+select = ["E", "F", "I"]  # 예: 에러, 포맷 문제, import 순서 검사
+exclude = ["**/migrations/*"]
 
 [build-system]
 requires = ["poetry-core"]
