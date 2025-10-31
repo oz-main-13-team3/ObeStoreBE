@@ -29,6 +29,13 @@ line-length = 120
 select = ["E", "F", "I"]  # 예: 에러, 포맷 문제, import 순서 검사
 exclude = ["**/migrations/*"]
 
+[tool.ruff]
+line-length = 120
+target-version = "py313"
+
+[tool.ruff.lint]
+select = ["E", "F", "I"]
+
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
