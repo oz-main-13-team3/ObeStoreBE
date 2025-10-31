@@ -41,7 +41,7 @@ class Brand(models.Model):
 
 class BrandImage(TimestampModel):
     brand_image = models.ImageField(null=False, blank=False, unique=True)
-    brand_id = models.ForeignKey(Brand, on_delete=models.SET_NULL, related_name="brand_image")
+    brand = models.ForeignKey(Brand, on_delete=models.SET_NULL, related_name="brand_image")
 
     class Meta:
         db_table = "brand_images"
@@ -49,7 +49,7 @@ class BrandImage(TimestampModel):
         verbose_name_plural = "브랜드 이미지 목록"
 
     def __str__(self):
-        return f"{self.brand_id.brand_name} - {self.brand_id}"
+        return f"{self.brand.brand_name} - {self.brand_id}"
 
 
 class Product(TimestampModel):
@@ -59,9 +59,9 @@ class Product(TimestampModel):
     discount_rate = models.DecimalField(max_digits=3, decimal_places=2, null=False, blank=False, default=0)
     product_rating = models.DecimalField(max_digits=2, decimal_places=1, null=False, blank=False, default=0)
     sales = models.IntegerField(null=False, blank=False, default=0)
-    category_id = models.ForeignKey(Category, on_delete=models.SET_NULL, related_name="products")
-    tag_id = models.ForeignKey(Tag, on_delete=models.SET_NULL, related_name="products")
-    brand_id = models.ForeignKey(Brand, on_delete=models.SET_NULL, related_name="products")
+    category = models.ForeignKey(Category, on_delete=models.SET_NULL, related_name="products")
+    tag = models.ForeignKey(Tag, on_delete=models.SET_NULL, related_name="products")
+    brand = models.ForeignKey(Brand, on_delete=models.SET_NULL, related_name="products")
 
     class Meta:
         ordering = ["-created_at"]
@@ -75,7 +75,7 @@ class Product(TimestampModel):
 
 class ProductImage(TimestampModel):
     product_image = models.ImageField(null=False, blank=False, unique=True)
-    product_id = models.ForeignKey(Product, on_delete=models.SET_NULL, related_name="product_image")
+    product = models.ForeignKey(Product, on_delete=models.SET_NULL, related_name="product_image")
 
     class Meta:
         db_table = "product_images"
@@ -83,7 +83,7 @@ class ProductImage(TimestampModel):
         verbose_name_plural = "상품 이미지 목록"
 
     def __str__(self):
-        return f"{self.product_id.product_name} - {self.product_id}"
+        return f"{self.product.product_name} - {self.product_id}"
 
 
 class ProductQna(TimestampModel):
@@ -91,8 +91,8 @@ class ProductQna(TimestampModel):
     question_title = models.CharField(max_length=50, null=False, blank=False)
     question_content = models.TextField(null=False, blank=False)
     question_answer = models.TextField(null=True, blank=True)
-    user_id = models.ForeignKey("User", on_delete=models.SET_NULL, related_name="product_qnas")
-    product_id = models.ForeignKey(Product, on_delete=models.SET_NULL, related_name="qnas")
+    user = models.ForeignKey("User", on_delete=models.SET_NULL, related_name="product_qnas")
+    product = models.ForeignKey(Product, on_delete=models.SET_NULL, related_name="qnas")
 
     class Meta:
         ordering = ["-created_at"]
