@@ -3,13 +3,8 @@ from django.contrib.auth.models import (
     AbstractBaseUser, BaseUserManager, PermissionsMixin
 )
 from django.core.validators import MinLengthValidator
+from utils.models import TimestampModel
 
-class TimeStampedModel(models.Model):
-    created_at = models.DateTimeField(auto_now_add=True, verbose_name="생성일자")
-    updated_at = models.DateTimeField(auto_now=True, verbose_name="수정일자")
-
-    class Meta:
-        abstract = True
 
 class UserManager(BaseUserManager):
     def create_user(self, email, password=None, **extra_fields):
@@ -33,7 +28,7 @@ class UserManager(BaseUserManager):
 
         return self.create_user(email, password, **extra_fields)
 
-class User(AbstractBaseUser, PermissionsMixin, TimeStampedModel):
+class User(AbstractBaseUser, PermissionsMixin, TimestampModel):
     email = models.EmailField(max_length=100, null=False,unique=True, verbose_name="이메일")
     password = models.CharField(max_length=255, null=False,verbose_name="비밀번호")
     username = models.CharField(max_length=30, null=False,verbose_name="이름")
@@ -55,11 +50,11 @@ class User(AbstractBaseUser, PermissionsMixin, TimeStampedModel):
     def __str__(self):
         return f"{self.nickname} ({self.email})"
 
-class SocialLogin(TimeStampedModel):
+class SocialLogin(TimestampModel):
     PROVIDER_CHOICES = ("naver", "naver")
 
     user_id = models.ForeignKey(
-        User, on_delete=models.CASCADE, related_name="social_logins"
+        User, on_delete=models.PROTECT, related_name="social_logins"
     )
 
     provider = models.CharField(max_length=50, choices=PROVIDER_CHOICES, unique=True, verbose_name="제공자")
@@ -76,7 +71,7 @@ class SocialLogin(TimeStampedModel):
         return f"{self.provider} - {self.provider_user_id}"
 
 
-class Address(TimeStampedModel):
+class Address(TimestampModel):
     user = models.ForeignKey(
         User,
         on_delete=models.CASCADE, #지워지게하기로했던가..?
@@ -100,7 +95,7 @@ class Address(TimeStampedModel):
         return self.address_name
 
 
-class Point(TimeStampedModel):
+class Point(TimestampModel):
     user = models.ForeignKey(
         User,
         related_name='points',
