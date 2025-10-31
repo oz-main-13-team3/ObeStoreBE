@@ -41,7 +41,7 @@ class Brand(models.Model):
 
 class BrandImage(TimestampModel):
     brand_image = models.ImageField(null=False, blank=False, unique=True)
-    brand_id = models.ForeignKey(Brand, on_delete=models.SET_NULL)
+    brand_id = models.ForeignKey(Brand, on_delete=models.SET_NULL, related_name="brand_image")
 
     class Meta:
         db_table = "brand_images"
@@ -59,9 +59,9 @@ class Product(TimestampModel):
     discount_rate = models.DecimalField(max_digits=3, decimal_places=2, null=False, blank=False, default=0)
     product_rating = models.DecimalField(max_digits=2, decimal_places=1, null=False, blank=False, default=0)
     sales = models.IntegerField(null=False, blank=False, default=0)
-    category_id = models.ForeignKey(Category, on_delete=models.SET_NULL)
-    tag_id = models.ForeignKey(Tag, on_delete=models.SET_NULL)
-    brand_id = models.ForeignKey(Brand, on_delete=models.SET_NULL)
+    category_id = models.ForeignKey(Category, on_delete=models.SET_NULL, related_name="products")
+    tag_id = models.ForeignKey(Tag, on_delete=models.SET_NULL, related_name="products")
+    brand_id = models.ForeignKey(Brand, on_delete=models.SET_NULL, related_name="products")
 
     class Meta:
         ordering = ["-created_at"]
@@ -75,7 +75,7 @@ class Product(TimestampModel):
 
 class ProductImage(TimestampModel):
     product_image = models.ImageField(null=False, blank=False, unique=True)
-    product_id = models.ForeignKey(Product, on_delete=models.SET_NULL)
+    product_id = models.ForeignKey(Product, on_delete=models.SET_NULL, related_name="product_image")
 
     class Meta:
         db_table = "product_images"
@@ -91,10 +91,11 @@ class ProductQna(TimestampModel):
     question_title = models.CharField(max_length=50, null=False, blank=False)
     question_content = models.TextField(null=False, blank=False)
     question_answer = models.TextField(null=True, blank=True)
-    user_id = models.ForeignKey("User", on_delete=models.SET_NULL)
-    product_id = models.ForeignKey(Product, on_delete=models.SET_NULL)
+    user_id = models.ForeignKey("User", on_delete=models.SET_NULL, related_name="product_qnas")
+    product_id = models.ForeignKey(Product, on_delete=models.SET_NULL, related_name="qnas")
 
     class Meta:
+        ordering = ["-created_at"]
         db_table = "product_qna"
         verbose_name = "상품 문의"
         verbose_name_plural = "상품 문의 목록"
