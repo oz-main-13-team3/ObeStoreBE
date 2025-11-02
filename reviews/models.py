@@ -1,48 +1,49 @@
 from django.db import models
+from django.contrib.auth import get_user_model
 
-from users.models import User
 from utils.models import TimestampModel
 
-class Keyword(models.Model):
-    keyword_type = models.CharField(max_length=15)
-    keyword_name = models.CharField(max_length=15, unique=True)
-
-    class Meta:
-        db_table = 'keywords'
-        verbose_name = '키워드'
-        verbose_name_plural = '키워드 목록'
 
 class Review(TimestampModel):
-    review_title = models.CharField(max_length=50)
-    content = models.TextField(null=False, blank=False)
-    product = models.ForeignKey('Product', on_delete=models.SET_NULL, related_name='product_reviews', null=True)
-    user = models.ForeignKey(User, on_delete=models.SET_NULL, related_name='user_reviews', null=True)
-    keywords = models.ManyToManyField(Keyword, through='ReviewKeyword', related_name='reviews')
+		review_title = models.CharField(max_length=50)
+		content = models.TextField()
+		product_id = models.ForeignKey('Product', on_delete=models.SET_NULL, null=True,related_name='product_reviews') #null=True 빠져서 넣었습니다.(1)
+		user = models.ForeignKey('User', on_delete=models.SET_NULL, null=True, related_name='user_reviews') #(1)
 
-    class Meta:
-        db_table = 'reviews'
-        ordering = ['-created_at']
-        verbose_name = '리뷰'
-        verbose_name_plural = '리뷰 목록'
+		class Meta:
+				db_table = 'reviews'
+				ordering = ['-created_at']
+				verbose_name = '리뷰'
+				verbose_name_plural = '리뷰 목록'
+
+
+class Keyword(models.Model):
+		keyword_type = models.CharField(max_length=15)
+		keyword_name = models.CharField(max_length=15, unique=True)
+		keywords = models.ManyToManyField('Keyword', related_name='keywords')
+
+		class Meta:
+				db_table = 'keywords'
+				ordering = ['-created_at']
+				verbose_name = '키워드'
+				verbose_name_plural = '키워드 목록'
+
 
 class ReviewKeyword(models.Model):
-    review = models.ForeignKey(Review, on_delete=models.CASCADE, related_name='review_keywords')
-    keyword = models.ForeignKey(Keyword, on_delete=models.CASCADE, related_name='keyword_reviews')
+		review_id = models.ForeignKey(Review, on_delete=models.SET_NULL, null=True,related_name='review_keywords') #(1)
+		keyword_id = models.ForeignKey(Keyword, on_delete=models.SET_NULL, null=True,related_name='keyword_reviews') #(1)
 
-    class Meta:
-        db_table = 'review_keywords'
-        ordering = ['-created_at']
-        constraints = [
-            models.UniqueConstraint(fields=['review', 'keyword'], name='unique_review_keyword')
-        ]
+		class Meta:
+				db_table = 'review_keywords'
+				ordering = ['-created_at']
 
 
 class ReviewImage(TimestampModel):
-    review_image = models.ImageField(null=False, blank=False)
-    review = models.ForeignKey(Review, on_delete=models.SET_NULL, related_name='review_images')
+		review_image = models.ImageField()
+		review_id = models.ForeignKey(Review, on_delete=models.SET_NULL, null=True,related_name='review_images') #(1)
 
-    class Meta:
-        db_table = 'review_images'
-        ordering = ['-created_at']
-        verbose_name = '리뷰이미지'
-        verbose_name_plural = '리뷰이미지 목록'
+		class Meta:
+				db_table = 'review_images'
+				ordering = ['-created_at']
+				verbose_name = '리뷰이미지'
+				verbose_name_plural = '리뷰이미지 목록'
