@@ -98,6 +98,7 @@ class Address(TimestampModel):
 class Point(TimestampModel):
     user = models.ForeignKey(
         User,
+				on_delete=models.CASCADE, #수정 가능(on_delete가 startapp 생성에 오류)
         related_name='points',
         verbose_name='회원번호'
     )
