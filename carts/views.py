@@ -29,5 +29,11 @@ class CartItemViewSet(viewsets.GenericViewSet,
 
     def perform_create(self, serializer):
         cart, _ = Cart.objects.get_or_create(user=self.request.user)
-        serializer.save(cart=cart)
+        product = serializer.validated_data["product"]
 
+        cart_item, created = CartItem.objects.get_or_create(cart=cart, product=product)
+        if not created:
+            cart_item.amount += serializer.validated_data.get("amount", 1)
+            cart_item.save()
+        else:
+            serializer.save(cart=cart)
