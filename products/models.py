@@ -91,7 +91,7 @@ class ProductQna(TimestampModel):
     question_title = models.CharField(max_length=50, null=False, blank=False)
     question_content = models.TextField(null=False, blank=False)
     question_answer = models.TextField(null=True, blank=True)
-    user = models.ForeignKey("User", on_delete=models.SET_NULL, null=True, related_name="product_qnas")
+    user = models.ForeignKey("users.User", on_delete=models.SET_NULL, null=True, related_name="product_qnas")
     product = models.ForeignKey(Product, on_delete=models.SET_NULL, null=True, related_name="qnas")
 
     class Meta:

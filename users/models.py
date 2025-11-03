@@ -1,18 +1,14 @@
-from django.db import models
-from django.contrib.auth.models import (
-    AbstractBaseUser, BaseUserManager, PermissionsMixin
-)
+from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 from django.core.validators import MinLengthValidator
+from django.db import models
 
-from products.models import Product
 from utils.models import TimestampModel
-from wishlists.models import Wishlist
 
 
 class UserManager(BaseUserManager):
     def create_user(self, email, password=None, **extra_fields):
         if not email:
-            raise ValueError('이메일을 입력해주세요.')
+            raise ValueError("이메일을 입력해주세요.")
         email = self.normalize_email(email)
         user = self.model(email=email, **extra_fields)
         user.set_password(password)
@@ -31,20 +27,20 @@ class UserManager(BaseUserManager):
 
         return self.create_user(email, password, **extra_fields)
 
+
 class User(AbstractBaseUser, PermissionsMixin, TimestampModel):
-    email = models.EmailField(max_length=100, null=False,unique=True, verbose_name="이메일")
-    password = models.CharField(max_length=255, null=False,verbose_name="비밀번호")
-    username = models.CharField(max_length=30, null=False,verbose_name="이름")
-    nickname = models.CharField(max_length=30, validators=[MinLengthValidator(6)], null=False,verbose_name="닉네임")
-    phone_number = models.CharField(max_length=15, null=False,verbose_name="휴대폰번호")
+    email = models.EmailField(max_length=100, null=False, unique=True, verbose_name="이메일")
+    password = models.CharField(max_length=255, null=False, verbose_name="비밀번호")
+    username = models.CharField(max_length=30, null=False, verbose_name="이름")
+    nickname = models.CharField(max_length=30, validators=[MinLengthValidator(6)], null=False, verbose_name="닉네임")
+    phone_number = models.CharField(max_length=15, null=False, verbose_name="휴대폰번호")
     is_staff = models.BooleanField(default=False, verbose_name="관리자권한")
     is_active = models.BooleanField(default=False, verbose_name="계정상태")
-    wishlists = models.ManyToManyField(Product, through='Wishlist', related_name='wishlisted_users')
 
     objects = UserManager()
 
-    USERNAME_FIELD = 'email'
-    REQUIRED_FIELDS = ['username']
+    USERNAME_FIELD = "email"
+    REQUIRED_FIELDS = ["username"]
 
     class Meta:
         db_table = "user"
@@ -54,12 +50,11 @@ class User(AbstractBaseUser, PermissionsMixin, TimestampModel):
     def __str__(self):
         return f"{self.nickname} ({self.email})"
 
-class SocialLogin(TimestampModel):
-    PROVIDER_CHOICES = ("naver", "naver")
 
-    user = models.ForeignKey(
-        User, on_delete=models.PROTECT, related_name="social_logins"
-    )
+class SocialLogin(TimestampModel):
+    PROVIDER_CHOICES = [("naver", "naver")]
+
+    user = models.ForeignKey(User, on_delete=models.PROTECT, related_name="social_logins")
 
     provider = models.CharField(max_length=50, choices=PROVIDER_CHOICES, unique=True, verbose_name="제공자")
     provider_user_id = models.BigIntegerField(verbose_name="제공자 측 고유 ID")
@@ -77,10 +72,7 @@ class SocialLogin(TimestampModel):
 
 class Address(TimestampModel):
     user = models.ForeignKey(
-        User,
-        on_delete=models.CASCADE, #지워지게하기로했던가..?
-        related_name='addresses',
-        verbose_name='사용자'
+        User, on_delete=models.CASCADE, related_name="addresses", verbose_name="사용자"  # 지워지게하기로했던가..?
     )
     address_name = models.CharField(max_length=30, null=False, verbose_name="배송지명")
     recipient = models.CharField(max_length=30, null=False, verbose_name="수취인")
@@ -92,7 +84,7 @@ class Address(TimestampModel):
     class Meta:
         verbose_name = "배송지"
         verbose_name_plural = "배송지 목록"
-        ordering = ('-updated_at',) # 최신 내역이 위로 오도록
+        ordering = ("-updated_at",)  # 최신 내역이 위로 오도록
         db_table = "addresses"
 
     def str(self):
@@ -102,10 +94,10 @@ class Address(TimestampModel):
 class Point(TimestampModel):
     user = models.ForeignKey(
         User,
-				on_delete=models.SET_NULL, #수정 가능(on_delete가 startapp 생성에 오류)
-        related_name='points',
-        verbose_name='회원번호',
-        null=True
+        on_delete=models.SET_NULL,  # 수정 가능(on_delete가 startapp 생성에 오류)
+        related_name="points",
+        verbose_name="회원번호",
+        null=True,
     )
 
     amount = models.IntegerField(default=0, verbose_name="현재 포인트 잔액")
@@ -114,8 +106,8 @@ class Point(TimestampModel):
     class Meta:
         verbose_name = "포인트 내역"
         verbose_name_plural = "포인트 내역 목록"
-        ordering = ('-updated_at',) # 최신 내역이 위로 오도록
-        db_table = "points" #추후수정~
+        ordering = ("-updated_at",)  # 최신 내역이 위로 오도록
+        db_table = "points"  # 추후수정~
 
     def str(self):
-        return f'잔액: {self.amount}'
+        return f"잔액: {self.amount}"
