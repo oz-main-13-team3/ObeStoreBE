@@ -42,7 +42,9 @@ INSTALLED_APPS = [
     "users",
     "products",
     "reviews",
-		"carts",
+	"carts",
+    "orders",
+    "wishlists",
 
     # ThirdPartyApps
     "rest_framework",
