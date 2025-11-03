@@ -3,7 +3,10 @@ from django.contrib.auth.models import (
     AbstractBaseUser, BaseUserManager, PermissionsMixin
 )
 from django.core.validators import MinLengthValidator
+
+from products.models import Product
 from utils.models import TimestampModel
+from wishlists.models import Wishlist
 
 
 class UserManager(BaseUserManager):
@@ -36,6 +39,7 @@ class User(AbstractBaseUser, PermissionsMixin, TimestampModel):
     phone_number = models.CharField(max_length=15, null=False,verbose_name="휴대폰번호")
     is_staff = models.BooleanField(default=False, verbose_name="관리자권한")
     is_active = models.BooleanField(default=False, verbose_name="계정상태")
+    wishlists = models.ManyToManyField(Product, through='Wishlist', related_name='wishlisted_users')
 
     objects = UserManager()
 
