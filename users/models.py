@@ -98,9 +98,10 @@ class Address(TimestampModel):
 class Point(TimestampModel):
     user = models.ForeignKey(
         User,
-				on_delete=models.CASCADE, #수정 가능(on_delete가 startapp 생성에 오류)
+				on_delete=models.SET_NULL, #수정 가능(on_delete가 startapp 생성에 오류)
         related_name='points',
-        verbose_name='회원번호'
+        verbose_name='회원번호',
+        null=True
     )
 
     amount = models.IntegerField(default=0, verbose_name="현재 포인트 잔액")
