@@ -1,5 +1,4 @@
-from tkinter import Image
-
+from django.db.models import Avg
 from rest_framework import viewsets, status, serializers
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -25,8 +24,22 @@ class ReviewViewSet(viewsets.ModelViewSet):
 		return Response(serializer.data, status=status.HTTP_200_OK)
 
 	@action(detail=False, methods=["get"])
-	def rating_average(self, request, product_id=None):
-		pass
+	def rating_average(self, request, *args, **kwargs):
+		product_id = request.query_params.get("product_id")
+		if not product_id:
+			return Response(
+				{"detail": "product_id 쿼리 파라미터가 필요합니다."},
+				status=status.HTTP_400_BAD_REQUEST,
+			)
+
+		avg_rating = Review.objects.filter(product_id=product_id).aggregate(
+			average=Avg("rating")
+		)["average"]
+
+		return Response(
+			{"product_id": product_id, "average_rating": round(avg_rating or 0, 2)},
+			status=status.HTTP_200_OK,
+		)  #모름..
 
 
 class ReviewKeywordViewSet(viewsets.ModelViewSet):
@@ -44,7 +57,7 @@ class ReviewKeywordViewSet(viewsets.ModelViewSet):
 		queryset = self.queryset
 		if review_id:
 				queryset = queryset.filter(review_id=review_id)
-			serializer = self.get_serializer(queryset, many=True)
+		serializer = self.get_serializer(queryset, many=True)
 		return Response(serializer.data, status=status.HTTP_200_OK)
 
 
@@ -77,6 +90,6 @@ class ReviewImageViewSet(viewsets.ModelViewSet):
 		return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 	def list(self, request, *args, **kwargs):
-		Image = Image.objects.all()
-		serializer = self.get_serializer(Image, many=True)
+		queryset = ReviewImage.objects.all()
+		serializer = self.get_serializer(queryset, many=True)
 		return Response(serializer.data, status=status.HTTP_200_OK)
