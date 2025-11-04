@@ -15,13 +15,13 @@ class ReviewImageSerializer(serializers.ModelSerializer):
 class KeywordSerializer(serializers.ModelSerializer):
     class Meta:
         model = Keyword
-        fields = "__all__"
+        fields = ["id", "keyword_name"]
 
 
 class ReviewKeywordSerializer(serializers.ModelSerializer):
     class Meta:
         model = ReviewKeyword
-        fields = "__all__"
+        fields = ["id", "review", "keyword"]
 
 
 class ReviewSerializer(serializers.ModelSerializer):
@@ -29,4 +29,14 @@ class ReviewSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Review
-        fields = "__all__"
+        fields = [
+					"id",
+					"review_title",
+					"product",
+					"user",
+					"review_images",
+					"review_keyword",
+					"content",
+					"created_at",
+					"updated_at",
+				]
