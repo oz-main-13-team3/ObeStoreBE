@@ -10,6 +10,8 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
+import os
+from datetime import timedelta
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -31,24 +33,6 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
-	"django.contrib.admin",
-	"django.contrib.auth",
-	"django.contrib.contenttypes",
-	"django.contrib.sessions",
-	"django.contrib.messages",
-	"django.contrib.staticfiles",
-	"django_filters",
-
-	# OwnApps
-	"users",
-	"products",
-	"reviews",
-	"carts",
-	"orders",
-	"wishlists",
-
-	# ThirdPartyApps
-	"rest_framework",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -64,6 +48,7 @@ INSTALLED_APPS = [
     "wishlists",
     # ThirdPartyApps
     "rest_framework",
+    "django_filters",
     "rest_framework_simplejwt",
     "django_redis",
 ]
@@ -155,12 +140,8 @@ MEDIA_URL = "/media/"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 REST_FRAMEWORK = {
-    "DEFAULT_AUTHENTICATION_CLASSES": (
-        "users.auth.RedisBlacklistJWTAuthentication",
-    ),
-    "DEFAULT_PERMISSION_CLASSES": (
-        "rest_framework.permissions.IsAuthenticated",
-    )
+    "DEFAULT_AUTHENTICATION_CLASSES": ("users.auth.RedisBlacklistJWTAuthentication",),
+    "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.IsAuthenticated",),
 }
 
 SIMPLE_JWT = {
@@ -179,15 +160,15 @@ CACHES = {
         "LOCATION": REDIS_URL,
         "OPTIONS": {
             "CLIENT_CLASS": "django_redis.client.DefaultClient",
-        }
+        },
     }
 }
 
 # 이메일 인증용
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+EMAIL_HOST = "smtp.gmail.com"
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
-EMAIL_HOST_USER = '3.obestore@gmail.com'
-EMAIL_HOST_PASSWORD = 'vslx sctc zyfs swem'
+EMAIL_HOST_USER = "3.obestore@gmail.com"
+EMAIL_HOST_PASSWORD = "vslx sctc zyfs swem"
 FRONTEND_BASE_URL = "http://127.0.0.1:8000"
