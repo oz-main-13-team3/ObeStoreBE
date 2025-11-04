@@ -28,7 +28,6 @@ class UserManager(BaseUserManager):
 
         return self.create_user(email, password, **extra_fields)
 
-
 class User(AbstractBaseUser, PermissionsMixin, TimestampModel):
     STATUS_CHOICES = (
         ("ready","비활성화"),
