@@ -1,10 +1,13 @@
 import os
 
+from dotenv import load_dotenv
+
 from config.settings.base import *  # noqa
 
 DEBUG = True
 ALLOWED_HOSTS = ["127.0.0.1", "localhost", "0.0.0.0"]
 
+load_dotenv()
 
 DATABASES = {
     "default": {
