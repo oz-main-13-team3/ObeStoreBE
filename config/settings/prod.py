@@ -1,6 +1,6 @@
 import os
 
-from config.settings.base import *  # noqa  # noqa
+from config.settings.base import *  # noqa
 
 DEBUG = False
 ALLOWED_HOSTS = ["*"]
