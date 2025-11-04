@@ -2,7 +2,6 @@ from rest_framework import serializers
 
 from products.serializer import ProductSerializer
 from .models import Review, ReviewImage, ReviewKeyword, Keyword
-from products.models import Product
 from products.serializers import ProductSerializere
 
 
