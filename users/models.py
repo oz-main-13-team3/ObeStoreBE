@@ -10,6 +10,7 @@ class UserManager(BaseUserManager):
         if not email:
             raise ValueError("이메일을 입력해주세요.")
         email = self.normalize_email(email)
+        extra_fields.setdefault("status", "ready")
         user = self.model(email=email, **extra_fields)
         user.set_password(password)
         user.save(using=self._db)
@@ -18,7 +19,7 @@ class UserManager(BaseUserManager):
     def create_superuser(self, email, password=None, **extra_fields):
         extra_fields.setdefault("is_staff", True)
         extra_fields.setdefault("is_superuser", True)
-        extra_fields.setdefault("is_active", True)
+        extra_fields.setdefault("status", "active")
 
         if extra_fields.get("is_staff") is not True:
             raise ValueError("슈퍼유저는 is_staff=True 이어야 합니다.")
@@ -27,20 +28,29 @@ class UserManager(BaseUserManager):
 
         return self.create_user(email, password, **extra_fields)
 
-
 class User(AbstractBaseUser, PermissionsMixin, TimestampModel):
+    STATUS_CHOICES = (
+        ("ready","비활성화"),
+        ("active","활성화"),
+        ("dormancy","휴면상태"),
+    )
+
     email = models.EmailField(max_length=100, null=False, unique=True, verbose_name="이메일")
     password = models.CharField(max_length=255, null=False, verbose_name="비밀번호")
     username = models.CharField(max_length=30, null=False, verbose_name="이름")
     nickname = models.CharField(max_length=30, validators=[MinLengthValidator(6)], null=False, verbose_name="닉네임")
     phone_number = models.CharField(max_length=15, null=False, verbose_name="휴대폰번호")
     is_staff = models.BooleanField(default=False, verbose_name="관리자권한")
-    is_active = models.BooleanField(default=False, verbose_name="계정상태")
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default="ready", verbose_name="계정상태")
 
     objects = UserManager()
 
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = ["username"]
+
+    @property
+    def is_active(self):
+        return self.status == "active"
 
     class Meta:
         db_table = "user"
@@ -55,8 +65,7 @@ class SocialLogin(TimestampModel):
     PROVIDER_CHOICES = [("naver", "naver")]
 
     user = models.ForeignKey(User, on_delete=models.PROTECT, related_name="social_logins")
-
-    provider = models.CharField(max_length=50, choices=PROVIDER_CHOICES, unique=True, verbose_name="제공자")
+    provider = models.CharField(max_length=50, choices=PROVIDER_CHOICES, verbose_name="제공자")
     provider_user_id = models.BigIntegerField(verbose_name="제공자 측 고유 ID")
     access_token = models.TextField(verbose_name="엑세스 토큰")
     refresh_token = models.TextField(verbose_name="리프레쉬 토큰")
@@ -65,6 +74,9 @@ class SocialLogin(TimestampModel):
         db_table = "social_login"
         verbose_name = "소셜 로그인"
         verbose_name_plural = "소셜 로그인 목록"
+        constraints = [
+            models.UniqueConstraint(fields=["provider", "provider_user_id"], name="unique_social_provider_user"),
+        ]
 
     def __str__(self):
         return f"{self.provider} - {self.provider_user_id}"
@@ -87,7 +99,7 @@ class Address(TimestampModel):
         ordering = ("-updated_at",)  # 최신 내역이 위로 오도록
         db_table = "addresses"
 
-    def str(self):
+    def __str__(self):
         return self.address_name
 
 
@@ -109,5 +121,5 @@ class Point(TimestampModel):
         ordering = ("-updated_at",)  # 최신 내역이 위로 오도록
         db_table = "points"  # 추후수정~
 
-    def str(self):
+    def __str__(self):
         return f"잔액: {self.amount}"
