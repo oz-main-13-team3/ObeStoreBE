@@ -1,26 +1,25 @@
-
 from django.conf import settings
-from django.core import signing
 from django.contrib.auth import get_user_model
+from django.core import signing
 from django.core.mail import send_mail
-from django.core.signing import SignatureExpired, BadSignature
-from rest_framework import viewsets, permissions, status
+from django.core.signing import BadSignature, SignatureExpired
+from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from rest_framework_simplejwt.tokens import RefreshToken, AccessToken
 from rest_framework_simplejwt.exceptions import TokenError
+from rest_framework_simplejwt.tokens import AccessToken, RefreshToken
 
 from .auth import blacklist_jti, is_blacklisted
-from .serializers import SignUpSerializer, LoginSerializer, MeSerializer, MeUpdateSerializer
-
-
+from .serializers import LoginSerializer, MeSerializer, MeUpdateSerializer, SignUpSerializer
 
 User = get_user_model()
 
 EMAIL_VERIFY_SALT = "verify-email"
 
+
 def make_email_token(email: str) -> str:
     return signing.dumps({"email": email}, salt=EMAIL_VERIFY_SALT)
+
 
 def parse_email_token(token: str) -> str:
     max_age = getattr(settings, "EMAIL_VERIFY_MAX_AGE", 60 * 60 * 24)
@@ -30,30 +29,34 @@ def parse_email_token(token: str) -> str:
 
 # 회원가입, 내정보, 이메일인증
 class UsersViewSet(viewsets.ViewSet):
-    permission_classes = (permissions.AllowAny, )
+    permission_classes = (permissions.AllowAny,)
 
-    @action(detail=False, methods=['post'], url_path='signup', permission_classes=[permissions.AllowAny])
+    @action(detail=False, methods=["post"], url_path="signup", permission_classes=[permissions.AllowAny])
     def signup(self, request):
-        ser = SignUpSerializer(data=request.data, context={'request': request})
+        ser = SignUpSerializer(data=request.data, context={"request": request})
         ser.is_valid(raise_exception=True)
         user = ser.save()
 
         # 인증용 토큰 생성
         code = make_email_token(user.email)
         host = request.get_host()
-        verify_url = f'{request.scheme}://{host}/users/email/verify?code={code}'
+        verify_url = f"{request.scheme}://{host}/users/email/verify?code={code}"
 
         if settings.DEBUG:
             print("[EMAIL VERIFY URL]", verify_url)
         else:
             subject = "[ObeStore] 이메일 인증을 완료해주세요."
-            html_message = f'링크를 클릭해 인증을 완료하세요 : {verify_url}'
+            html_message = f"링크를 클릭해 인증을 완료하세요 : {verify_url}"
             send_mail(subject, None, settings.DEFAULT_FROM_EMAIL, [user.email], html_message=html_message)
 
         return Response({"detail": "회원가입 완료! 이메일 인증을 진행해주세요."}, status=status.HTTP_201_CREATED)
 
-
-    @action(detail=False, methods=["get", "patch", "delete"], url_path='me', permission_classes=[permissions.IsAuthenticated])
+    @action(
+        detail=False,
+        methods=["get", "patch", "delete"],
+        url_path="me",
+        permission_classes=[permissions.IsAuthenticated],
+    )
     def me(self, request):
         if request.method == "GET":
             return Response(MeSerializer(request.user).data)
@@ -69,7 +72,6 @@ class UsersViewSet(viewsets.ViewSet):
         request.user.status = "dormancy"
         request.user.save(update_fields=["status"])
         return Response(status=status.HTTP_204_NO_CONTENT)
-
 
     @action(detail=False, methods=["get"], url_path="email/verify", permission_classes=[permissions.AllowAny])
     def email_verify(self, request):
@@ -88,7 +90,9 @@ class UsersViewSet(viewsets.ViewSet):
             # 추후 변경
             # return redirect(f"{getattr(settings, 'FRONTEND_BASE_URL', '/')}/email-verified")
         except SignatureExpired:
-            return Response({"detail": "인증 링크가 만료되었습니다. 재발송을 요청하세요."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"detail": "인증 링크가 만료되었습니다. 재발송을 요청하세요."}, status=status.HTTP_400_BAD_REQUEST
+            )
         except (BadSignature, User.DoesNotExist, KeyError, ValueError):
             return Response({"detail": "유효하지 않은 링크입니다."}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -99,7 +103,7 @@ class SessionViewSet(viewsets.ViewSet):
 
     @action(detail=False, methods=["post"])
     def login(self, request):
-        ser = LoginSerializer(data=request.data, context={'request': request})
+        ser = LoginSerializer(data=request.data, context={"request": request})
         ser.is_valid(raise_exception=True)
         tokens = ser.save()
 
@@ -107,7 +111,22 @@ class SessionViewSet(viewsets.ViewSet):
         secure = not settings.DEBUG
         refresh_age = int(settings.SIMPLE_JWT["REFRESH_TOKEN_LIFETIME"].total_seconds())
         resp.set_cookie(
-            "refresh_token", tokens["refresh"], max_age=refresh_age, secure=secure, httponly=True, samesite="Lax", path="/"
+            "refresh_token",
+            tokens["refresh"],
+            max_age=refresh_age,
+            secure=secure,
+            httponly=True,
+            samesite="Lax",
+            path="/",
+        )
+        resp.set_cookie(
+            "access_token",
+            tokens["access"],
+            max_age=refresh_age,
+            secure=secure,
+            httponly=True,
+            samesite="Lax",
+            path="/",
         )
         return resp
 
@@ -148,5 +167,3 @@ class SessionViewSet(viewsets.ViewSet):
             return Response({"access": str(rt.access_token)}, status=200)
         except TokenError:
             return Response({"detail": "유효하지 않은 refresh 토큰입니다."}, status=400)
-
-

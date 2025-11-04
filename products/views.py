@@ -1,5 +1,6 @@
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters, viewsets
+from rest_framework.permissions import AllowAny
 
 from products.filters import ProductFilter
 from products.models import Product, ProductQna
@@ -14,6 +15,7 @@ class ProductViewSet(viewsets.ReadOnlyModelViewSet):
     search_fields = ["product_name"]
     ordering_fields = ["sales", "product_value", "created_at", "review_count"]
     ordering = ["-created_at"]  # 기본 정렬
+    permission_classes = [AllowAny]
 
     def get_queryset(self):
         queryset = Product.objects.select_related("category", "tag", "brand").all()
