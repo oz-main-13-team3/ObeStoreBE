@@ -87,7 +87,12 @@ class ProductImage(TimestampModel):
 
 
 class ProductQna(TimestampModel):
-    question_type = models.CharField(max_length=15, null=False, blank=False)
+    QUESTION_TYPE_CHOICES = (
+        ("inquiry", "문의"),
+        ("suggestion", "건의"),
+    )
+
+    question_type = models.CharField(max_length=15, choices=QUESTION_TYPE_CHOICES, null=False, blank=False)
     question_title = models.CharField(max_length=50, null=False, blank=False)
     question_content = models.TextField(null=False, blank=False)
     question_answer = models.TextField(null=True, blank=True)
