@@ -3,9 +3,13 @@ from django.contrib.auth import get_user_model
 from django.core import signing
 from django.core.mail import send_mail
 from django.core.signing import BadSignature, SignatureExpired
+from django.shortcuts import redirect
+from django.utils.crypto import get_random_string
 from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import action
+from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
+from rest_framework.views import APIView
 from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.tokens import AccessToken, RefreshToken
 
@@ -168,3 +172,24 @@ class SessionViewSet(viewsets.ViewSet):
             return Response({"access": str(rt.access_token)}, status=200)
         except TokenError:
             return Response({"detail": "유효하지 않은 refresh 토큰입니다."}, status=400)
+
+
+class NaverLoginView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        client_id = settings.Naver_CLIENT_ID
+        redirect_uri = settings.Naver_CLIENT_REDIRECT_URI
+        state = get_random_string(32)
+
+        request.session["naver_oauth_state"] = state
+
+        naver_auth_url = (
+            "https://nid.naver.com/oauth2.0/authorize"
+            f"?response_type=code"
+            f"&client_id={client_id}"
+            f"&redirect_uri={redirect_uri}"
+            f"&state={state}"
+        )
+
+        return redirect(naver_auth_url)
