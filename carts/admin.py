@@ -1,4 +1,5 @@
 from django.contrib import admin
+
 from .models import Cart, CartItem
 
 
@@ -17,8 +18,10 @@ class CartItemAdmin(admin.ModelAdmin):
 
     def cart_user(self, obj):
         return obj.cart.user.nickname if obj.cart and obj.cart.user else "삭제된 사용자"
+
     cart_user.short_description = "유저 닉네임"
 
     def product_name(self, obj):
         return obj.product.product_name if obj.product else "삭제된 상품"
+
     product_name.short_description = "상품명"

@@ -1,22 +1,25 @@
 from datetime import datetime, timezone
+
 from django_redis import get_redis_connection
 from rest_framework_simplejwt.authentication import JWTAuthentication
-from rest_framework_simplejwt.exceptions import InvalidToken, AuthenticationFailed
-
-
+from rest_framework_simplejwt.exceptions import AuthenticationFailed, InvalidToken
 
 BLACKLIST_PREFIX = "jwt:blacklist:"
 
+
 def _redis():
     return get_redis_connection("default")
+
 
 def blacklist_jti(jti: str, exp_timestamp: int):
     now = int(datetime.now(timezone.utc).timestamp())
     ttl = max(exp_timestamp - now, 1)
     _redis().setex(f"{BLACKLIST_PREFIX}{jti}", ttl, 1)
 
+
 def is_blacklisted(jti: str) -> bool:
     return _redis().get(f"{BLACKLIST_PREFIX}{jti}") is not None
+
 
 class RedisBlacklistJWTAuthentication(JWTAuthentication):
     def get_validated_token(self, raw_token):
@@ -27,5 +30,3 @@ class RedisBlacklistJWTAuthentication(JWTAuthentication):
         if is_blacklisted(jti):
             raise AuthenticationFailed("Token blacklisted")
         return token
-
-
