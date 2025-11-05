@@ -5,7 +5,7 @@ from rest_framework.response import Response
 from rest_framework.templatetags.rest_framework import data
 
 from reviews.models import Review, Keyword, ReviewKeyword, ReviewImage
-from reviews.serializer import ReviewSerializer, ReviewKeywordSerializer, KeywordSerializer, ReviewImageSerializer
+from reviews.serializers import ReviewSerializer, ReviewKeywordSerializer, KeywordSerializer, ReviewImageSerializer
 
 
 class ReviewViewSet(viewsets.ModelViewSet):
