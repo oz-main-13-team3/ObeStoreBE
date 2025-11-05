@@ -153,6 +153,7 @@ class SessionViewSet(viewsets.ViewSet):
 
         resp = Response(status=204)
         resp.delete_cookie("refresh_token")
+        resp.delete_cookie("access_token")
         return resp
 
     @action(detail=False, methods=["post"], url_path="token/refresh")
