@@ -74,7 +74,8 @@ class Product(TimestampModel):
 
 
 class ProductImage(TimestampModel):
-    product_image = models.ImageField(null=False, blank=False, unique=True)
+    product_card_image = models.ImageField(null=False, blank=False, unique=True)
+    product_explain_image = models.ImageField(unique=True)
     product = models.ForeignKey(Product, on_delete=models.SET_NULL, null=True, related_name="product_image")
 
     class Meta:
@@ -83,7 +84,7 @@ class ProductImage(TimestampModel):
         verbose_name_plural = "상품 이미지 목록"
 
     def __str__(self):
-        return f"{self.product.product_name} - {self.product_id}"
+        return f"[{self.product_id}] - [{self.product.product_name}]"
 
 
 class ProductQna(TimestampModel):
