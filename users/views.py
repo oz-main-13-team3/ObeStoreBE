@@ -178,8 +178,8 @@ class NaverLoginView(APIView):
     permission_classes = [AllowAny]
 
     def get(self, request):
-        client_id = settings.Naver_CLIENT_ID
-        redirect_uri = settings.Naver_CLIENT_REDIRECT_URI
+        client_id = settings.NAVER_CLIENT_ID
+        redirect_uri = settings.NAVER_REDIRECT_URI
         state = get_random_string(32)
 
         request.session["naver_oauth_state"] = state
