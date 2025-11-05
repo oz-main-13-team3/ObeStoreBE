@@ -1,15 +1,18 @@
-from django.contrib.auth import get_user_model, password_validation, authenticate
+from django.contrib.auth import authenticate, get_user_model, password_validation
 from rest_framework import serializers
 from rest_framework_simplejwt.tokens import RefreshToken
 
 User = get_user_model()
 
+
 class SignUpSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['email', 'password', 'username', 'nickname', 'phone_number']
-        extra_kwargs = {'password': {'write_only': True},}
+        fields = ["email", "password", "username", "nickname", "phone_number"]
+        extra_kwargs = {
+            "password": {"write_only": True},
+        }
 
     def validate_email(self, value):
         return value.strip().lower()
@@ -19,9 +22,10 @@ class SignUpSerializer(serializers.ModelSerializer):
         return value
 
     def create(self, validated_data):
-        pwd = validated_data.pop('password')
+        pwd = validated_data.pop("password")
         user = User.objects.create_user(password=pwd, **validated_data, status="ready")
         return user
+
 
 class LoginSerializer(serializers.Serializer):
     email = serializers.EmailField()
@@ -44,12 +48,13 @@ class LoginSerializer(serializers.Serializer):
         refresh = RefreshToken.for_user(user)
         return {"access": str(refresh.access_token), "refresh": str(refresh)}
 
+
 class MeUpdateSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True)
 
     class Meta:
         model = User
-        fields = ['password']
+        fields = ["password"]
 
     def validate_password(self, value):
         password_validation.validate_password(value, user=self.instance)
@@ -61,9 +66,9 @@ class MeUpdateSerializer(serializers.ModelSerializer):
         instance.save(update_fields=["password"])
         return instance
 
+
 class MeSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ['email', 'username', 'nickname', 'phone_number']
-        read_only_fields = ['email', 'username', 'nickname', 'phone_number']
-
+        fields = ["email", "username", "nickname", "phone_number"]
+        read_only_fields = ["email", "username", "nickname", "phone_number"]
