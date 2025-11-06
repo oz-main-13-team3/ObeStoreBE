@@ -69,6 +69,7 @@ class SocialLogin(TimestampModel):
     provider_user_id = models.BigIntegerField(verbose_name="제공자 측 고유 ID")
     access_token = models.TextField(verbose_name="엑세스 토큰")
     refresh_token = models.TextField(verbose_name="리프레쉬 토큰")
+    point_balance = models.IntegerField(default=0, verbose_name="포인트 잔액")
 
     class Meta:
         db_table = "social_login"
@@ -104,22 +105,14 @@ class Address(TimestampModel):
 
 
 class Point(TimestampModel):
-    user = models.ForeignKey(
-        User,
-        on_delete=models.SET_NULL,  # 수정 가능(on_delete가 startapp 생성에 오류)
-        related_name="points",
-        verbose_name="회원번호",
-        null=True,
-    )
-
-    amount = models.IntegerField(default=0, verbose_name="현재 포인트 잔액")
+    user = models.ForeignKey(User, on_delete=models.CASCADE, null=False, related_name="points", verbose_name="회원번호")
+    amount = models.IntegerField(default=0, verbose_name="포인트 잔액")
     balance = models.IntegerField(verbose_name="포인트 변화량")
+
+    event_key = models.CharField(max_length=120, null=True, blank=True, unique=True, verbose_name="이벤트 키")
 
     class Meta:
         verbose_name = "포인트 내역"
         verbose_name_plural = "포인트 내역 목록"
-        ordering = ("-updated_at",)  # 최신 내역이 위로 오도록
-        db_table = "points"  # 추후수정~
-
-    def __str__(self):
-        return f"잔액: {self.amount}"
+        ordering = ("-updated_at",)
+        db_table = "points"
