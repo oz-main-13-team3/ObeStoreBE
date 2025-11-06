@@ -1,10 +1,13 @@
+import requests
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core import signing
 from django.core.mail import send_mail
 from django.core.signing import BadSignature, SignatureExpired
+from django.http import JsonResponse
 from django.shortcuts import redirect
 from django.utils.crypto import get_random_string
+from django.views import View
 from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny
@@ -193,3 +196,70 @@ class NaverLoginView(APIView):
         )
 
         return redirect(naver_auth_url)
+
+
+class NaverCallbackView(View):
+    def get(self, request):
+        code = request.GET.get("code")
+        state = request.GET.get("state")
+
+        if not code:
+            return JsonResponse({"error": "Missing authorization code."}, status=400)
+
+        token_url = "https://nid.naver.com/oauth2.0/token"
+        data = {
+            "grant_type": "authorization_code",
+            "client_id": settings.NAVER_CLIENT_ID,
+            "client_secret": settings.NAVER_CLIENT_SECRET,
+            "code": code,
+            "state": state,
+        }
+
+        token_response = requests.get(token_url, params=data)
+        token_data = token_response.json()
+
+        access_token = token_data.get("access_token")
+        if not access_token:
+            return JsonResponse({"error": "Failed to get access token.", "detail": token_data}, status=400)
+
+        profile_url = "https://openapi.naver.com/v1/nid/me"
+        headers = {"Authorization": f"Bearer {access_token}"}
+        profile_response = requests.get(profile_url, headers=headers)
+        profile_data = profile_response.json()
+
+        user_info = profile_data.get("response", {})
+        email = user_info.get("email")
+        name = user_info.get("name")
+        nickname = user_info.get("nickname")
+        phone_number = user_info.get("mobile", "").replace("-", "")
+
+        if not email:
+            return JsonResponse({"error": "Email not provided by Naver."}, status=400)
+
+        user, created = User.objects.get_or_create(
+            email=email,
+            defaults={
+                "username": name,
+                "nickname": nickname,
+                "phone_number": phone_number,
+                "status": "active",
+            },
+        )
+        if created:
+            user.set_unusable_password()
+            user.save()
+
+        refresh = RefreshToken.for_user(user)
+        access = str(refresh.access_token)
+
+        response = JsonResponse(
+            {
+                "message": "Naver login success",
+                "email": email,
+                "username": name,
+                "nickname": nickname,
+            }
+        )
+        response.set_cookie("access_token", str(access), httponly=True, samesite="Lax")
+        response.set_cookie("refresh_token", str(refresh), httponly=True, samesite="Lax")
+        return response
