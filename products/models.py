@@ -1,3 +1,5 @@
+import uuid
+
 from django.db import models
 
 from utils.models import TimestampModel
@@ -73,10 +75,16 @@ class Product(TimestampModel):
         return self.product_name
 
 
+def product_image_path(instance, filename):
+    ext = filename.split(".")[-1]
+    product_id = instance.product.id if instance.product else "unassigned"
+    return f"products/{product_id}/{uuid.uuid4()}.{ext}"
+
+
 class ProductImage(TimestampModel):
-    product_card_image = models.ImageField(null=False, blank=False, unique=True)
-    product_explain_image = models.ImageField(unique=True)
-    product = models.ForeignKey(Product, on_delete=models.SET_NULL, null=True, related_name="product_image")
+    product_card_image = models.ImageField(upload_to=product_image_path)
+    product_explain_image = models.ImageField(upload_to=product_image_path)
+    product = models.ForeignKey(Product, on_delete=models.SET_NULL, null=True, related_name="product_images")
 
     class Meta:
         db_table = "product_images"
