@@ -1,6 +1,6 @@
 from django.urls import path
 
-from .views import NaverLoginView, SessionViewSet, UsersViewSet
+from .views import NaverCallbackView, NaverLoginView, SessionViewSet, UsersViewSet
 
 users = UsersViewSet.as_view
 session = SessionViewSet.as_view
@@ -13,4 +13,5 @@ urlpatterns = [
     path("logout", session({"post": "logout"}), name="logout"),
     path("token/refresh", session({"post": "token_refresh"}), name="token_refresh"),
     path("oauth/naver/login/", NaverLoginView.as_view(), name="naver_login"),
+    path("oauth/naver/callback/", NaverCallbackView.as_view(), name="naver_callback"),
 ]
