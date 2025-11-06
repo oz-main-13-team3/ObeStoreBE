@@ -6,6 +6,7 @@ from rest_framework.response import Response
 from carts.models import CartItem
 from orders.models import Order
 from users.models import Point
+from users.services.points import get_point_balance
 
 
 @api_view(["POST"])
@@ -16,7 +17,7 @@ def Create_order(request):
     cart_item = CartItem.objects.filter(user=user, is_active=True)
 
     total = sum(item.product.product_value * item.amount for item in cart_item)
-    if used_point > user.services.points:
+    if used_point > get_point_balance(user):
         return Response({"error": "포인트 부족"}, status=400)
 
     pay_amount = total - used_point

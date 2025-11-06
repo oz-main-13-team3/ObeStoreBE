@@ -32,3 +32,7 @@ def apply_point_delta(user: User, delta: int, *, event_key: str | None) -> Point
     user_locked.save(update_fields=["point_balance"])
 
     return point
+
+
+def get_point_balance(user):
+    return user.point_balance
