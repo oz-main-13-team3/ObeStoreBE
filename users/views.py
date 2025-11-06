@@ -5,7 +5,7 @@ from django.core import signing
 from django.core.mail import send_mail
 from django.core.signing import BadSignature, SignatureExpired
 from django.http import JsonResponse
-from django.shortcuts import redirect
+from django.shortcuts import redirect, get_object_or_404
 from django.utils.crypto import get_random_string
 from django.views import View
 from rest_framework import permissions, status, viewsets
@@ -17,7 +17,9 @@ from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.tokens import AccessToken, RefreshToken
 
 from .auth import blacklist_jti, is_blacklisted
-from .serializers import LoginSerializer, MeSerializer, MeUpdateSerializer, SignUpSerializer
+from .models import Address, Point
+from .serializers import LoginSerializer, MeSerializer, MeUpdateSerializer, SignUpSerializer, AddressSerializer, \
+    PointListSerializer
 
 User = get_user_model()
 
@@ -34,7 +36,7 @@ def parse_email_token(token: str) -> str:
     return data["email"]
 
 
-# 회원가입, 내정보, 이메일인증
+# 회원가입, 내정보, 이메일인증, 포인트, 배송지
 class UsersViewSet(viewsets.ViewSet):
     permission_classes = (permissions.AllowAny,)
 
@@ -103,6 +105,48 @@ class UsersViewSet(viewsets.ViewSet):
         except (BadSignature, User.DoesNotExist, KeyError, ValueError):
             return Response({"detail": "유효하지 않은 링크입니다."}, status=status.HTTP_400_BAD_REQUEST)
 
+    # 포인트 내역 조회..
+    @action(detail=False, methods=["get"], url_path="me/points", permission_classes=[permissions.IsAuthenticated])
+    def points(self, request):
+        qs = Point.objects.filter(user=request.user).order_by("-created_at", "-id")
+        return Response(PointListSerializer(qs, many=True).data, status=200)
+
+    # 포인트 잔액 조회
+    @action(detail=False, methods=["get"], url_path="me/points/balance", permission_classes=[permissions.IsAuthenticated])
+    def points_balance(self, request):
+        last = Point.objects.filter(user=request.user).order_by("-created_at", "-id").first()
+        current = last.amount if last else 0
+        return Response({"balance": current}, status=200)
+
+    @action(detail=False, methods=["get", "post", "patch", "delete"], url_path="me/address", permission_classes=[permissions.IsAuthenticated])
+    def address(self, request):
+        user = request.user
+
+        if request.method == "GET":
+            qs = Address.objects.filter(user=user).order_by("-updated_at")
+            return Response(AddressSerializer(qs, many=True).data, status=200)
+
+        if request.method == "POST":
+            ser = AddressSerializer(data=request.data, context={"request": request})
+            ser.is_valid(raise_exception=True)
+            obj = ser.save()
+            return Response(AddressSerializer(obj).data, status=201)
+
+        addr_id = request.query_params.get("id")
+        if not addr_id:
+            return Response({"detail": "쿼리 파라미터 Id가 필요합니다."}, status=400)
+
+        addr = get_object_or_404(Address, pk=addr_id, user=user)
+
+        if request.method == "PATCH":
+            ser = AddressSerializer(addr, data=request.data, partial=True, context={"request": request})
+            ser.is_valid(raise_exception=True)
+            ser.save()
+            return Response(ser.data, status=200)
+
+        addr.delete()
+        return Response(status=204)
+
 
 # login, logout, tokenrefresh
 class SessionViewSet(viewsets.ViewSet):
@@ -159,8 +203,8 @@ class SessionViewSet(viewsets.ViewSet):
                 pass
 
         resp = Response(status=204)
-        resp.delete_cookie("refresh_token")
-        resp.delete_cookie("access_token")
+        resp.delete_cookie("refresh_token", path="/")
+        resp.delete_cookie("access_token", path="/")
         return resp
 
     @action(detail=False, methods=["post"], url_path="token/refresh")
