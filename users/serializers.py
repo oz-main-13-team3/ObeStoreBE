@@ -1,18 +1,17 @@
-from django.contrib.auth import authenticate, get_user_model, password_validation
+from django.contrib.auth import get_user_model, password_validation, authenticate
 from rest_framework import serializers
 from rest_framework_simplejwt.tokens import RefreshToken
 
-User = get_user_model()
+from users.models import Address, Point
 
+User = get_user_model()
 
 class SignUpSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ["email", "password", "username", "nickname", "phone_number"]
-        extra_kwargs = {
-            "password": {"write_only": True},
-        }
+        fields = ['email', 'password', 'username', 'nickname', 'phone_number']
+        extra_kwargs = {'password': {'write_only': True},}
 
     def validate_email(self, value):
         return value.strip().lower()
@@ -22,10 +21,9 @@ class SignUpSerializer(serializers.ModelSerializer):
         return value
 
     def create(self, validated_data):
-        pwd = validated_data.pop("password")
+        pwd = validated_data.pop('password')
         user = User.objects.create_user(password=pwd, **validated_data, status="ready")
         return user
-
 
 class LoginSerializer(serializers.Serializer):
     email = serializers.EmailField()
@@ -48,13 +46,12 @@ class LoginSerializer(serializers.Serializer):
         refresh = RefreshToken.for_user(user)
         return {"access": str(refresh.access_token), "refresh": str(refresh)}
 
-
 class MeUpdateSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True)
 
     class Meta:
         model = User
-        fields = ["password"]
+        fields = ['password']
 
     def validate_password(self, value):
         password_validation.validate_password(value, user=self.instance)
@@ -66,9 +63,32 @@ class MeUpdateSerializer(serializers.ModelSerializer):
         instance.save(update_fields=["password"])
         return instance
 
-
 class MeSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ["email", "username", "nickname", "phone_number"]
-        read_only_fields = ["email", "username", "nickname", "phone_number"]
+        fields = ['email', 'username', 'nickname', 'phone_number']
+        read_only_fields = ['email', 'username', 'nickname', 'phone_number']
+
+
+class AddressSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Address
+        fields = ["id", "address_name", "recipient", "recipient_phone", "post_code", "address", "detail_address"]
+        read_only_fields = ["id"]
+
+    def create(self, validated_data):
+        validated_data["user"] = self.context["request"].user
+        return super().create(validated_data)
+
+    def validate(self, attrs):
+        return attrs
+
+
+class PointListSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Point
+        fields = ["id", "amount", "balance", "created_at", "updated_at"]
+        read_only_fields = fields
+
+class PointBalanceSerializer(serializers.Serializer):
+    balance = serializers.IntegerField(read_only=True)
