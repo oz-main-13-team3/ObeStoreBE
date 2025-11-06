@@ -1,12 +1,23 @@
 from rest_framework import serializers
 
-from products.models import Product, ProductQna
+from products.models import Product, ProductImage, ProductQna
+
+
+class ProductImageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ProductImage
+        fields = [
+            "product_card_image",
+            "product_explain_image",
+        ]
 
 
 class ProductSerializer(serializers.ModelSerializer):
     category_name = serializers.CharField(source="category.category_name", read_only=True)
     tag_name = serializers.CharField(source="tag.tag_name", read_only=True)
     brand_name = serializers.CharField(source="brand.brand_name", read_only=True)
+
+    product_image = ProductImageSerializer(read_only=True)
 
     class Meta:
         model = Product
@@ -25,6 +36,7 @@ class ProductSerializer(serializers.ModelSerializer):
             "tag_name",
             "brand_id",
             "brand_name",
+            "product_image",
         ]
 
 
