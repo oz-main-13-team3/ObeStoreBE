@@ -8,12 +8,12 @@ from utils.models import TimestampModel
 
 
 class Order(TimestampModel):
-    used_point = models.IntegerField(default=0)
-    order_status = models.CharField(max_length=15, default="접수 완료")
-    delivery_status = models.CharField(max_length=15, default="배송 준비")
-    order_number = models.UUIDField(
-        default=uuid.uuid4, editable=False, unique=True
-    )  # editable:관리자페이지에서 변경 불가
+    ORDER_STATUS_CHOICES = [
+        ("접수 완료", "접수 완료"),
+        ("주문 실패", "주문 실패"),
+        ("주문 완료", "주문 완료"),
+    ]
+    DELIVERY_STATUS_CHOICES = [("배송 준비", "배송 준비"), ("배송 중", "배송 중"), ("배송 완료", "배송 완료")]
 
     user = models.ForeignKey(
         User,
@@ -21,6 +21,18 @@ class Order(TimestampModel):
         related_name="orders",  # 유저에서 참조
         null=True,
     )
+
+    used_point = models.IntegerField(default=0, verbose_name="사용된 적립금")
+    order_status = models.CharField(
+        max_length=15, choices=ORDER_STATUS_CHOICES, default="접수 완료", verbose_name="주문상태"
+    )
+    delivery_status = models.CharField(
+        max_length=15, choices=DELIVERY_STATUS_CHOICES, default="배송 준비", verbose_name="배송상태"
+    )
+
+    order_number = models.UUIDField(
+        default=uuid.uuid4, editable=False, unique=True, verbose_name="주문번호(노출용)"
+    )  # editable:관리자페이지에서 변경 불가
 
     class Meta:
         db_table = "orders"
@@ -33,13 +45,15 @@ class Order(TimestampModel):
 
 
 class OrderProduct(TimestampModel):
-    order = models.ForeignKey(
-        Order,
-        on_delete=models.CASCADE,
+    order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name="order_products", verbose_name="주문")
+    product = models.ForeignKey(
+        Product,
+        on_delete=models.SET_NULL,
+        null=True,
         related_name="order_products",
+        verbose_name="상품",
     )
-    amount = models.PositiveIntegerField(null=True, blank=True, default=1)
-    product = models.ForeignKey(Product, related_name="ordered_products", on_delete=models.SET_NULL, null=True)
+    amount = models.PositiveIntegerField(null=True, blank=True, default=1, verbose_name="상품수량")
 
     class Meta:
         db_table = "order_products"
@@ -52,15 +66,42 @@ class OrderProduct(TimestampModel):
 
 
 class Payment(TimestampModel):
-    payment_status = (models.CharField(max_length=15, null=False, blank=False, default="ready"),)
-    payment_method = (models.CharField(max_length=15, null=False, blank=False),)
-    payment_amount = (models.PositiveIntegerField(null=True, blank=True, default=0),)
+    PAYMENT_STATUS_CHOICES = [
+        ("ready", "ready"),
+        ("success", "success"),
+        ("failed", "failed"),
+    ]
+    PAYMENT_METHOD_CHOICES = [
+        ("tosspay", "tosspay"),
+    ]
     order = models.ForeignKey(
         "Order",
         on_delete=models.SET_NULL,
         related_name="payments",
         null=True,
+        verbose_name="주문번호",
     )
+    payment_status = (
+        models.CharField(
+            max_length=15,
+            choices=PAYMENT_STATUS_CHOICES,
+            null=False,
+            blank=False,
+            default="ready",
+            verbose_name="결제상태",
+        ),
+    )
+    payment_method = (
+        models.CharField(
+            max_length=15,
+            choices=PAYMENT_METHOD_CHOICES,
+            null=False,
+            blank=False,
+            default="tosspay",
+            verbose_name="결제수단",
+        ),
+    )
+    payment_amount = (models.PositiveIntegerField(null=True, blank=True, default=0, verbose_name="결제금액"),)
 
     class Meta:
         db_table = "payments"

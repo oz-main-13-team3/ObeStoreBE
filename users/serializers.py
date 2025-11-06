@@ -1,18 +1,17 @@
-from django.contrib.auth import get_user_model, password_validation, authenticate
+from django.contrib.auth import authenticate, get_user_model, password_validation
 from django.db import IntegrityError
 from rest_framework import serializers
-from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.validators import UniqueValidator
+from rest_framework_simplejwt.tokens import RefreshToken
 
 from users.models import Address, Point
 
 User = get_user_model()
 
+
 class SignUpSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(
-        validators=[
-            UniqueValidator(queryset=User.objects.all(), message="이미 등록된 이메일입니다.")
-        ]
+        validators=[UniqueValidator(queryset=User.objects.all(), message="이미 등록된 이메일입니다.")]
     )
 
     class Meta:
@@ -30,12 +29,13 @@ class SignUpSerializer(serializers.ModelSerializer):
         return value
 
     def create(self, validated_data):
-        pwd = validated_data.pop('password')
+        pwd = validated_data.pop("password")
         try:
             user = User.objects.create_user(password=pwd, **validated_data, status="ready")
             return user
         except IntegrityError:
             raise serializers.ValidationError({"email": "이미 등록된 이메일입니다."})
+
 
 class LoginSerializer(serializers.Serializer):
     email = serializers.EmailField()
@@ -58,6 +58,7 @@ class LoginSerializer(serializers.Serializer):
         refresh = RefreshToken.for_user(user)
         return {"access": str(refresh.access_token), "refresh": str(refresh)}
 
+
 class MeUpdateSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True)
 
@@ -74,6 +75,7 @@ class MeUpdateSerializer(serializers.ModelSerializer):
         instance.set_password(new_password)
         instance.save(update_fields=["password"])
         return instance
+
 
 class MeSerializer(serializers.ModelSerializer):
     class Meta:
@@ -101,6 +103,7 @@ class PointListSerializer(serializers.ModelSerializer):
         model = Point
         fields = ["id", "amount", "balance", "created_at", "updated_at"]
         read_only_fields = fields
+
 
 class PointBalanceSerializer(serializers.Serializer):
     balance = serializers.IntegerField(read_only=True)

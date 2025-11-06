@@ -6,5 +6,4 @@ class ReviewsConfig(AppConfig):
     name = "reviews"
 
     def ready(self):
-        from . import signals # noqa
-
+        from . import signals  # noqa
