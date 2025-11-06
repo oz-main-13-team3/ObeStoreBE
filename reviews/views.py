@@ -1,11 +1,9 @@
 from rest_framework import status, viewsets
-from rest_framework.decorators import action
 from rest_framework.response import Response
 
 from reviews.models import Keyword, Review, ReviewImage, ReviewKeyword
 from reviews.serializers import (
     KeywordSerializer,
-    RatingAverageSerializer,
     ReviewImageSerializer,
     ReviewKeywordSerializer,
     ReviewSerializer,
@@ -16,22 +14,8 @@ class ReviewViewSet(viewsets.ModelViewSet):
     queryset = Review.objects.all()
     serializer_class = ReviewSerializer
 
-    def create(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        serializer.save(user=request.user)
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
-
-    def list(self, request, *args, **kwargs):
-        queryset = Review.objects.all()
-        serializer = self.get_serializer(queryset, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
-
-    @action(detail=False, methods=["get"], url_path="rating-average", url_name="rating_average")
-    def rating_average(self, request, *args, **kwargs):
-        serializer = RatingAverageSerializer(data=request.query_params)
-        serializer.is_valid(raise_exception=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
 
 
 class ReviewKeywordViewSet(viewsets.ModelViewSet):

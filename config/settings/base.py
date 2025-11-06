@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 
 import os
 from datetime import timedelta
+from decimal import Decimal
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -181,3 +182,8 @@ load_dotenv()
 NAVER_CLIENT_ID = os.getenv("NAVER_CLIENT_ID")
 NAVER_CLIENT_SECRET = os.getenv("NAVER_CLIENT_SECRET")
 NAVER_REDIRECT_URI = "http://127.0.0.1:8000/api/users/oauth/naver/callback/"
+REVIEW_REWARD_RATE = Decimal("0.10")
+REVIEW_REWARD_ROUND = "floor"
+REVIEW_REWARD_MIN = None
+REVIEW_REWARD_MAX = None
+REVIEW_REWARD_PRICE_ATTR = "product_value"
