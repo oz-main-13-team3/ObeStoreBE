@@ -5,7 +5,7 @@ from django.core import signing
 from django.core.mail import send_mail
 from django.core.signing import BadSignature, SignatureExpired
 from django.http import JsonResponse
-from django.shortcuts import redirect, get_object_or_404
+from django.shortcuts import get_object_or_404, redirect
 from django.utils.crypto import get_random_string
 from django.views import View
 from rest_framework import permissions, status, viewsets
@@ -18,8 +18,14 @@ from rest_framework_simplejwt.tokens import AccessToken, RefreshToken
 
 from .auth import blacklist_jti, is_blacklisted
 from .models import Address, Point
-from .serializers import LoginSerializer, MeSerializer, MeUpdateSerializer, SignUpSerializer, AddressSerializer, \
-    PointListSerializer
+from .serializers import (
+    AddressSerializer,
+    LoginSerializer,
+    MeSerializer,
+    MeUpdateSerializer,
+    PointListSerializer,
+    SignUpSerializer,
+)
 
 User = get_user_model()
 
@@ -112,13 +118,20 @@ class UsersViewSet(viewsets.ViewSet):
         return Response(PointListSerializer(qs, many=True).data, status=200)
 
     # 포인트 잔액 조회
-    @action(detail=False, methods=["get"], url_path="me/points/balance", permission_classes=[permissions.IsAuthenticated])
+    @action(
+        detail=False, methods=["get"], url_path="me/points/balance", permission_classes=[permissions.IsAuthenticated]
+    )
     def points_balance(self, request):
         last = Point.objects.filter(user=request.user).order_by("-created_at", "-id").first()
         current = last.amount if last else 0
         return Response({"balance": current}, status=200)
 
-    @action(detail=False, methods=["get", "post", "patch", "delete"], url_path="me/address", permission_classes=[permissions.IsAuthenticated])
+    @action(
+        detail=False,
+        methods=["get", "post", "patch", "delete"],
+        url_path="me/address",
+        permission_classes=[permissions.IsAuthenticated],
+    )
     def address(self, request):
         user = request.user
 

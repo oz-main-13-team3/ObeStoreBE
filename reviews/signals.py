@@ -1,17 +1,20 @@
 from __future__ import annotations
 
-from decimal import Decimal, ROUND_FLOOR, ROUND_HALF_UP, ROUND_CEILING
+from decimal import ROUND_CEILING, ROUND_FLOOR, ROUND_HALF_UP, Decimal
+
 from django.conf import settings
 from django.db import transaction
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 
-from users.services.points import apply_point_delta, PointError
+from users.services.points import PointError, apply_point_delta
+
 from .models import Review
 
 
 def _earn_rate() -> Decimal:
     return Decimal(str(getattr(settings, "REVIEW_REWARD_RATE", 0.10)))
+
 
 def _round_mode():
     mode = str(getattr(settings, "REVIEW_REWARD_ROUND", "floor")).lower()
@@ -21,16 +24,20 @@ def _round_mode():
         return ROUND_HALF_UP
     return ROUND_FLOOR
 
+
 def _reward_min() -> int | None:
     v = getattr(settings, "REVIEW_REWARD_MIN", None)
     return int(v) if v is not None else None
+
 
 def _reward_max() -> int | None:
     v = getattr(settings, "REVIEW_REWARD_MAX", None)
     return int(v) if v is not None else None
 
+
 def _price_attr_name() -> str:
     return getattr(settings, "REVIEW_REWARD_PRICE_ATTR", "product_value")
+
 
 def _get_product_price(review: "Review") -> int:
     product = getattr(review, "product", None)
@@ -44,6 +51,7 @@ def _get_product_price(review: "Review") -> int:
         return int(Decimal(str(price)))
     except Exception:
         return 0
+
 
 def _compute_review_reward(review: "Review") -> int:
     price = _get_product_price(review)
@@ -91,4 +99,3 @@ def award_points_for_review(sender, instance: "Review", created: bool, **kwargs)
             pass
 
     transaction.on_commit(_apply)
-

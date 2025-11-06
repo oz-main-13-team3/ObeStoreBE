@@ -37,6 +37,12 @@ class RatingAverageSerializer(serializers.Serializer):
         }
 
 
+def validate_rating(value):
+    if not 1 <= value <= 5:
+        raise serializers.ValidationError("별점이 주어집니다.")
+    return value
+
+
 class ReviewSerializer(serializers.ModelSerializer):
     product = ProductSerializer(read_only=True)
 

@@ -1,8 +1,11 @@
-from django.db import transaction, IntegrityError
-from users.models import User, Point
+from django.db import IntegrityError, transaction
+
+from users.models import Point, User
+
 
 class PointError(Exception):
     pass
+
 
 @transaction.atomic
 def apply_point_delta(user: User, delta: int, *, event_key: str | None) -> Point:
