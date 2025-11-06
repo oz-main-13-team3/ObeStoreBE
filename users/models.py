@@ -1,5 +1,4 @@
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
-from django.core.validators import MinLengthValidator
 from django.db import models
 
 from utils.models import TimestampModel
@@ -39,7 +38,7 @@ class User(AbstractBaseUser, PermissionsMixin, TimestampModel):
     email = models.EmailField(max_length=100, null=False, unique=True, verbose_name="이메일")
     password = models.CharField(max_length=255, null=False, verbose_name="비밀번호")
     username = models.CharField(max_length=30, null=False, verbose_name="이름")
-    nickname = models.CharField(max_length=30, validators=[MinLengthValidator(6)], null=False, verbose_name="닉네임")
+    nickname = models.CharField(max_length=30, null=False, verbose_name="닉네임")
     phone_number = models.CharField(max_length=15, null=False, verbose_name="휴대폰번호")
     is_staff = models.BooleanField(default=False, verbose_name="관리자권한")
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default="ready", verbose_name="계정상태")
