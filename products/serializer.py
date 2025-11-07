@@ -17,6 +17,8 @@ class ProductSerializer(serializers.ModelSerializer):
     tag_name = serializers.CharField(source="tag.tag_name", read_only=True)
     brand_name = serializers.CharField(source="brand.brand_name", read_only=True)
 
+    dc_value = serializers.SerializerMethodField()
+
     product_image = ProductImageSerializer(read_only=True)
 
     class Meta:
@@ -28,6 +30,7 @@ class ProductSerializer(serializers.ModelSerializer):
             "product_stock",
             "discount_rate",
             "product_rating",
+            "dc_value",
             "created_at",
             "updated_at",
             "category_id",
@@ -38,6 +41,9 @@ class ProductSerializer(serializers.ModelSerializer):
             "brand_name",
             "product_image",
         ]
+
+    def get_dc_value(self, obj):
+        return int(obj.product_value * (1 - obj.discount_rate))
 
 
 class ProductQnaCreateSerializer(serializers.ModelSerializer):
