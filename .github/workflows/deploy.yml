@@ -30,7 +30,7 @@ jobs:
             fi
             command -v git >/dev/null 2>&1 || sudo apt-get install -y git
             
-            APP_DIR=obstore
+            APP_DIR=obestore
             REPO_URL="${{ secrets.REPO_URL }}"
             sudo mkdir -p "$APP_DIR"
             sudo chown ubuntu:ubuntu "$APP_DIR"
