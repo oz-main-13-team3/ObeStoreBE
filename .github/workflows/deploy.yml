@@ -30,7 +30,11 @@ jobs:
             mkdir -p ~/envs
 
             # env 파일 생성
-            echo "${{secrets.ENV_PROD}}" > ~/envs/.env.prod
+#            echo "${{secrets.ENV_PROD}}" > ~/envs/.env.prod
+             mkdir -p envs
+             cat > envs/.env.prod << 'EOF'
+             ${{ secrets.ENV_PROD }}
+             EOF
             
             docker pull $DOCKER_USERNAME/django-app:latest
             docker stop django_container || true
@@ -41,5 +45,6 @@ jobs:
             $DOCKER_USERNAME/django-app:latest
             
             docker image prune -af
+            docker compose up -d --build --pull=always
             docker ps
           EOF
