@@ -42,6 +42,7 @@ class User(AbstractBaseUser, PermissionsMixin, TimestampModel):
     phone_number = models.CharField(max_length=15, null=False, verbose_name="휴대폰번호")
     is_staff = models.BooleanField(default=False, verbose_name="관리자권한")
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default="ready", verbose_name="계정상태")
+    point_balance = models.IntegerField(default=0)
 
     objects = UserManager()
 
