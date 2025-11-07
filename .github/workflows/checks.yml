@@ -53,6 +53,7 @@ jobs:
         run: |
           export SECRET_KEY="${{ secrets.SECRET_KEY }}"
           export DATABASE_URL=postgres://${{ secrets.DB_USER }}:${{ secrets.DB_PASSWORD }}@localhost:5432/${{ secrets.DB_NAME }}
+          poetry run python manage.py makemigrations
           poetry run python manage.py migrate
 
       - name: Run Django Tests
