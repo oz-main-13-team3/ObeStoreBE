@@ -60,7 +60,7 @@ class OrderSerializer(serializers.ModelSerializer):
         for item in order_products_data:
             product = item["product"]
             amount = item.get("amount", 1)
-            price = product.price
+            price = product.product_value
             total_price = price * amount
 
             OrderProduct.objects.create(
