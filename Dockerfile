@@ -28,6 +28,9 @@ RUN /root/.local/bin/poetry install --no-interaction --no-ansi --no-root
 # 앱 코드 및 실행 스크립트 복사
 COPY . /app
 
+# static 파일 생성
+RUN mkdir -p /app/static
+
 # 실행 스크립트 권한 부여
 RUN chmod +x /app/scripts/run.sh
 
