@@ -1,0 +1,45 @@
+name: Deploy to EC2
+
+on:
+  push:
+    branches: [ main ]
+  workflow_run:
+    workflows: ["Build Docker Image"]
+    types:
+      - completed
+
+jobs:
+  deploy:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: SSH into EC2 and deploy
+        env:
+          PRIVATE_KEY: ${{ secrets.EC2_PRIVATE_KEY }}
+          HOST: ${{ secrets.EC2_HOST }}
+          USER: ${{ secrets.EC2_USER }}
+          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+        run: |
+          mkdir -p ~/.ssh
+          echo "$PRIVATE_KEY" | tr -d '\r' > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+
+          # EOF에 따옴표 제거 (변수 확장 허용)
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa $USER@$HOST << EOF
+            mkdir -p ~/envs
+
+            # env 파일 생성
+            echo "${{secrets.ENV_PROD}}" > ~/envs/.env.prod
+            
+            docker pull $DOCKER_USERNAME/django-app:latest
+            docker stop django_container || true
+            docker rm django_container || true
+            
+            docker run -d --name django_container -p 8000:8000 \
+            --env-file ~/envs/.env.prod \
+            $DOCKER_USERNAME/django-app:latest
+            
+            docker image prune -af
+            docker ps
+          EOF
