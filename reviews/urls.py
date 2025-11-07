@@ -1,10 +1,7 @@
 from rest_framework.routers import DefaultRouter
 
-from reviews.views import KeywordViewSet, ReviewImageViewSet, ReviewViewSet
+from reviews.views import ReviewViewSet
 
 router = DefaultRouter()
-router.register("keywords", KeywordViewSet)
-router.register("reviews", ReviewViewSet)
-router.register("reviews_image", ReviewImageViewSet)
-
+router.register("", ReviewViewSet, basename="reviews")
 urlpatterns = router.urls
