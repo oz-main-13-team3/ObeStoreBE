@@ -15,36 +15,44 @@ jobs:
 
     steps:
       - name: SSH into EC2 and deploy
-        env:
-          PRIVATE_KEY: ${{ secrets.EC2_PRIVATE_KEY }}
-          HOST: ${{ secrets.EC2_HOST }}
-          USER: ${{ secrets.EC2_USER }}
-          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
-        run: |
-          mkdir -p ~/.ssh
-          echo "$PRIVATE_KEY" | tr -d '\r' > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
+        uses: appleboy/ssh-action@v0.1.10
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            set -euo pipefail
+            
+            # ---- Docker/Compose 준비 ----
+            command -v docker >/dev/null 2>&1 || curl -fsSL https://get.docker.com | sudo sh
+            if ! docker compose version >/dev/null 2>&1; then
+              sudo apt-get update -y && sudo apt-get install -y docker-compose-plugin
+            fi
+            command -v git >/dev/null 2>&1 || sudo apt-get install -y git
+            
+            APP_DIR=obstore
+            REPO_URL="${{ secrets.REPO_URL }}"
+            sudo mkdir -p "$APP_DIR"
+            sudo chown ubuntu:ubuntu "$APP_DIR"
+            
+            if [ ! -d "$APP_DIR/.git" ]; then
+              git clone "$REPO_URL" "$APP_DIR"
+            else
+              cd "$APP_DIR"
+              git fetch origin
+              git reset --hard origin/main
+            fi
 
-          # EOF에 따옴표 제거 (변수 확장 허용)
-          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa $USER@$HOST << EOF
-            mkdir -p ~/envs
-
-            # env 파일 생성
-#            echo "${{secrets.ENV_PROD}}" > ~/envs/.env.prod
-             mkdir -p envs
-             cat > envs/.env.prod << 'EOF'
-             ${{ secrets.ENV_PROD }}
-             EOF
+            cd "$APP_DIR"
             
-            docker pull $DOCKER_USERNAME/django-app:latest
-            docker stop django_container || true
-            docker rm django_container || true
+            # ---- 환경변수 파일 ----
+            mkdir -p envs
+            cat > envs/.env.prod << 'EOF'
+            ${{ secrets.ENV_PROD }}
+            EOF
             
-            docker run -d --name django_container -p 8000:8000 \
-            --env-file ~/envs/.env.prod \
-            $DOCKER_USERNAME/django-app:latest
-            
-            docker image prune -af
             docker compose up -d --build --pull=always
-            docker ps
-          EOF
+            
+            # ---- 상태체크 ----
+            docker compose ps
+            docker compose logs -n 80 web
