@@ -3,6 +3,7 @@ repos:
     rev: 25.9.0  # black의 버전, 프로젝트에 맞춰 적절히 지정
     hooks:
       - id: black
+        args: ["--line-length=120"]
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.14.3  # ruff-pre-commit의 버전

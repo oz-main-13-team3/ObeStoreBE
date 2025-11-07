@@ -1,0 +1,322 @@
+import requests
+from django.conf import settings
+from django.contrib.auth import get_user_model
+from django.core import signing
+from django.core.mail import send_mail
+from django.core.signing import BadSignature, SignatureExpired
+from django.http import JsonResponse
+from django.shortcuts import get_object_or_404, redirect
+from django.utils.crypto import get_random_string
+from django.views import View
+from rest_framework import permissions, status, viewsets
+from rest_framework.decorators import action
+from rest_framework.permissions import AllowAny
+from rest_framework.response import Response
+from rest_framework.views import APIView
+from rest_framework_simplejwt.exceptions import TokenError
+from rest_framework_simplejwt.tokens import AccessToken, RefreshToken
+
+from .auth import blacklist_jti, is_blacklisted
+from .models import Address, Point
+from .serializers import (
+    AddressSerializer,
+    LoginSerializer,
+    MeSerializer,
+    MeUpdateSerializer,
+    PointListSerializer,
+    SignUpSerializer,
+)
+
+User = get_user_model()
+
+EMAIL_VERIFY_SALT = "verify-email"
+
+
+def make_email_token(email: str) -> str:
+    return signing.dumps({"email": email}, salt=EMAIL_VERIFY_SALT)
+
+
+def parse_email_token(token: str) -> str:
+    max_age = getattr(settings, "EMAIL_VERIFY_MAX_AGE", 60 * 60 * 24)
+    data = signing.loads(token, salt=EMAIL_VERIFY_SALT, max_age=max_age)
+    return data["email"]
+
+
+# 회원가입, 내정보, 이메일인증, 포인트, 배송지
+class UsersViewSet(viewsets.ViewSet):
+    permission_classes = (permissions.AllowAny,)
+
+    @action(detail=False, methods=["post"], url_path="signup", permission_classes=[permissions.AllowAny])
+    def signup(self, request):
+        ser = SignUpSerializer(data=request.data, context={"request": request})
+        ser.is_valid(raise_exception=True)
+        user = ser.save()
+
+        # 인증용 토큰 생성
+        code = make_email_token(user.email)
+        host = request.get_host()
+        verify_url = f"{request.scheme}://{host}/users/email/verify?code={code}"
+
+        if settings.DEBUG:
+            print("[EMAIL VERIFY URL]", verify_url)
+        else:
+            subject = "[ObeStore] 이메일 인증을 완료해주세요."
+            html_message = f"링크를 클릭해 인증을 완료하세요 : {verify_url}"
+            send_mail(subject, None, settings.DEFAULT_FROM_EMAIL, [user.email], html_message=html_message)
+
+        return Response({"detail": "회원가입 완료! 이메일 인증을 진행해주세요."}, status=status.HTTP_201_CREATED)
+
+    @action(
+        detail=False,
+        methods=["get", "patch", "delete"],
+        url_path="me",
+        permission_classes=[permissions.IsAuthenticated],
+    )
+    def me(self, request):
+        if request.method == "GET":
+            return Response(MeSerializer(request.user).data)
+
+        if request.method == "PATCH":
+            if "password" not in request.data or not request.data.get("password"):
+                return Response({"detail": "password 필드가 필요합니다."}, status=status.HTTP_400_BAD_REQUEST)
+            ser = MeUpdateSerializer(request.user, data=request.data, partial=False)
+            ser.is_valid(raise_exception=True)
+            ser.save()
+            return Response({"detail": "비밀번호가 변경되었습니다."})
+
+        request.user.status = "dormancy"
+        request.user.save(update_fields=["status"])
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+    @action(detail=False, methods=["get"], url_path="email/verify", permission_classes=[permissions.AllowAny])
+    def email_verify(self, request):
+        code = request.query_params.get("code")
+        if not code:
+            return Response({"detail": "code 파라미터가 필요합니다."}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            email = parse_email_token(code)
+            user = User.objects.get(email=email)
+            if user.status != "active":
+                user.status = "active"
+                user.save(update_fields=["status"])
+
+            return Response({"detail": "이메일 인증이 완료되었습니다."}, status=200)
+            # 추후 변경
+            # return redirect(f"{getattr(settings, 'FRONTEND_BASE_URL', '/')}/email-verified")
+        except SignatureExpired:
+            return Response(
+                {"detail": "인증 링크가 만료되었습니다. 재발송을 요청하세요."}, status=status.HTTP_400_BAD_REQUEST
+            )
+        except (BadSignature, User.DoesNotExist, KeyError, ValueError):
+            return Response({"detail": "유효하지 않은 링크입니다."}, status=status.HTTP_400_BAD_REQUEST)
+
+    # 포인트 내역 조회..
+    @action(detail=False, methods=["get"], url_path="me/points", permission_classes=[permissions.IsAuthenticated])
+    def points(self, request):
+        qs = Point.objects.filter(user=request.user).order_by("-created_at", "-id")
+        return Response(PointListSerializer(qs, many=True).data, status=200)
+
+    # 포인트 잔액 조회
+    @action(
+        detail=False, methods=["get"], url_path="me/points/balance", permission_classes=[permissions.IsAuthenticated]
+    )
+    def points_balance(self, request):
+        last = Point.objects.filter(user=request.user).order_by("-created_at", "-id").first()
+        current = last.amount if last else 0
+        return Response({"balance": current}, status=200)
+
+    @action(
+        detail=False,
+        methods=["get", "post", "patch", "delete"],
+        url_path="me/address",
+        permission_classes=[permissions.IsAuthenticated],
+    )
+    def address(self, request):
+        user = request.user
+
+        if request.method == "GET":
+            qs = Address.objects.filter(user=user).order_by("-updated_at")
+            return Response(AddressSerializer(qs, many=True).data, status=200)
+
+        if request.method == "POST":
+            ser = AddressSerializer(data=request.data, context={"request": request})
+            ser.is_valid(raise_exception=True)
+            obj = ser.save()
+            return Response(AddressSerializer(obj).data, status=201)
+
+        addr_id = request.query_params.get("id")
+        if not addr_id:
+            return Response({"detail": "쿼리 파라미터 Id가 필요합니다."}, status=400)
+
+        addr = get_object_or_404(Address, pk=addr_id, user=user)
+
+        if request.method == "PATCH":
+            ser = AddressSerializer(addr, data=request.data, partial=True, context={"request": request})
+            ser.is_valid(raise_exception=True)
+            ser.save()
+            return Response(ser.data, status=200)
+
+        addr.delete()
+        return Response(status=204)
+
+
+# login, logout, tokenrefresh
+class SessionViewSet(viewsets.ViewSet):
+    permission_classes = [permissions.AllowAny]
+
+    @action(detail=False, methods=["post"])
+    def login(self, request):
+        ser = LoginSerializer(data=request.data, context={"request": request})
+        ser.is_valid(raise_exception=True)
+        tokens = ser.save()
+
+        resp = Response({"access": tokens["access"]}, status=200)
+        secure = not settings.DEBUG
+        refresh_age = int(settings.SIMPLE_JWT["REFRESH_TOKEN_LIFETIME"].total_seconds())
+        resp.set_cookie(
+            "refresh_token",
+            tokens["refresh"],
+            max_age=refresh_age,
+            secure=secure,
+            httponly=True,
+            samesite="Lax",
+            path="/",
+        )
+        resp.set_cookie(
+            "access_token",
+            tokens["access"],
+            max_age=refresh_age,
+            secure=secure,
+            httponly=True,
+            samesite="Lax",
+            path="/",
+        )
+        return resp
+
+    @action(detail=False, methods=["post"], permission_classes=[permissions.IsAuthenticated])
+    def logout(self, request):
+        # access 블랙리스ㅡㅌ
+        auth = request.META.get("HTTP_AUTHORIZATION", "")
+        if auth.startswith("Bearer "):
+            raw_access = auth.split(" ", 1)[1]
+            try:
+                at = AccessToken(raw_access)
+                blacklist_jti(at["jti"], int(at["exp"]))
+            except TokenError:
+                pass
+
+        # refresh 블랙리스트
+        refresh = request.data.get("refresh") or request.COOKIES.get("refresh_token")
+        if refresh:
+            try:
+                rt = RefreshToken(refresh)
+                blacklist_jti(rt["jti"], int(rt["exp"]))
+            except TokenError:
+                pass
+
+        resp = Response(status=204)
+        resp.delete_cookie("refresh_token", path="/")
+        resp.delete_cookie("access_token", path="/")
+        return resp
+
+    @action(detail=False, methods=["post"], url_path="token/refresh")
+    def token_refresh(self, request):
+        refresh = request.data.get("refresh") or request.COOKIES.get("refresh_token")
+        if not refresh:
+            return Response({"detail": "refresh 토큰이 필요합니다."}, status=400)
+        try:
+            rt = RefreshToken(refresh)
+            if is_blacklisted(rt["jti"]):
+                return Response({"detail": "블랙리스트 처리된 refresh 토큰입니다."}, status=400)
+            return Response({"access": str(rt.access_token)}, status=200)
+        except TokenError:
+            return Response({"detail": "유효하지 않은 refresh 토큰입니다."}, status=400)
+
+
+class NaverLoginView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        client_id = settings.NAVER_CLIENT_ID
+        redirect_uri = settings.NAVER_REDIRECT_URI
+        state = get_random_string(32)
+
+        request.session["naver_oauth_state"] = state
+
+        naver_auth_url = (
+            "https://nid.naver.com/oauth2.0/authorize"
+            f"?response_type=code"
+            f"&client_id={client_id}"
+            f"&redirect_uri={redirect_uri}"
+            f"&state={state}"
+        )
+
+        return redirect(naver_auth_url)
+
+
+class NaverCallbackView(View):
+    def get(self, request):
+        code = request.GET.get("code")
+        state = request.GET.get("state")
+
+        if not code:
+            return JsonResponse({"error": "Missing authorization code."}, status=400)
+
+        token_url = "https://nid.naver.com/oauth2.0/token"
+        data = {
+            "grant_type": "authorization_code",
+            "client_id": settings.NAVER_CLIENT_ID,
+            "client_secret": settings.NAVER_CLIENT_SECRET,
+            "code": code,
+            "state": state,
+        }
+
+        token_response = requests.get(token_url, params=data)
+        token_data = token_response.json()
+
+        access_token = token_data.get("access_token")
+        if not access_token:
+            return JsonResponse({"error": "Failed to get access token.", "detail": token_data}, status=400)
+
+        profile_url = "https://openapi.naver.com/v1/nid/me"
+        headers = {"Authorization": f"Bearer {access_token}"}
+        profile_response = requests.get(profile_url, headers=headers)
+        profile_data = profile_response.json()
+
+        user_info = profile_data.get("response", {})
+        email = user_info.get("email")
+        name = user_info.get("name")
+        nickname = user_info.get("nickname")
+        phone_number = user_info.get("mobile", "").replace("-", "")
+
+        if not email:
+            return JsonResponse({"error": "Email not provided by Naver."}, status=400)
+
+        user, created = User.objects.get_or_create(
+            email=email,
+            defaults={
+                "username": name,
+                "nickname": nickname,
+                "phone_number": phone_number,
+                "status": "active",
+            },
+        )
+        if created:
+            user.set_unusable_password()
+            user.save()
+
+        refresh = RefreshToken.for_user(user)
+        access = str(refresh.access_token)
+
+        response = JsonResponse(
+            {
+                "message": "Naver login success",
+                "email": email,
+                "username": name,
+                "nickname": nickname,
+            }
+        )
+        response.set_cookie("access_token", str(access), httponly=True, samesite="Lax")
+        response.set_cookie("refresh_token", str(refresh), httponly=True, samesite="Lax")
+        return response

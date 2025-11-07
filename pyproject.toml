@@ -14,12 +14,31 @@ psycopg2-binary = "^2.9.11"
 psycopg = "^3.2.12"
 djangorestframework-simplejwt = "^5.5.1"
 python-dotenv = "^1.2.1"
+pillow = "^12.0.0"
+django-redis = "^6.0.0"
+django-filter = "^25.2"
+drf-nested-routers = "^0.95.0"
+pre-commit = "^4.3.0"
+requests = "^2.32.5"
+django-storages = "^1.14.6"
+boto3 = "^1.40.67"
 
 [tool.poetry.group.dev.dependencies]
 ruff = "^0.14.3"
 black = "^25.9.0"
 pre-commit = "^4.3.0"
 
+[tool.black]
+line-length = 120
+
+[tool.ruff]
+line-length = 120
+exclude = ["**/migrations/*"]
+target-version = "py313"
+
+[tool.ruff.lint]
+select = ["E", "F", "I"]
+ignore = ["E501"]
 
 [build-system]
 requires = ["poetry-core"]

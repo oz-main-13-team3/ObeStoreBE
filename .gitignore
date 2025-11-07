@@ -179,3 +179,8 @@ pyrightconfig.json
 
 # End of https://www.toptal.com/developers/gitignore/api/python.venv/
 .venv/
+
+# Ignore migrations for your apps (but not Django default apps)
+**/migrations/*.py
+!**/migrations/__init__.py
+**/migrations/*.pyc

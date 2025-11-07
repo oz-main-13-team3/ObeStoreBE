@@ -20,6 +20,15 @@ services:
       retries: 5
       start_period: 5s
 
+  redis:
+    container_name: redis
+    image: redis:7
+    restart: always
+    ports:
+      - "6379:6379"
+    networks:
+      - ws
+
   web:
     container_name: web
     build: .
