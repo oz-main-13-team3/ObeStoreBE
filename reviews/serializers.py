@@ -1,15 +1,15 @@
 from django.db.models import Avg
 from rest_framework import serializers
 
-from products.serializer import ProductSerializer
-
 from .models import Keyword, Review, ReviewImage, ReviewKeyword
 
 
 class ReviewImageSerializer(serializers.ModelSerializer):
+    review_image = serializers.ImageField(use_url=True)
+
     class Meta:
         model = ReviewImage
-        fields = ["id", "review", "review_image", "created_at"]
+        fields = ["review_image"]
 
 
 class KeywordSerializer(serializers.ModelSerializer):
@@ -19,9 +19,11 @@ class KeywordSerializer(serializers.ModelSerializer):
 
 
 class ReviewKeywordSerializer(serializers.ModelSerializer):
+    keyword_name = serializers.CharField(source="keyword.keyword_name", read_only=True)
+
     class Meta:
         model = ReviewKeyword
-        fields = ["id", "review", "keyword"]
+        fields = ["keyword_name"]
 
 
 class RatingAverageSerializer(serializers.Serializer):
@@ -44,16 +46,19 @@ def validate_rating(value):
 
 
 class ReviewSerializer(serializers.ModelSerializer):
-    product = ProductSerializer(read_only=True)
+    product_id = serializers.IntegerField(source="product.id", read_only=True)
+
+    review_keyword = ReviewKeywordSerializer(many=True, read_only=True, source="review_keywords")
+    review_image = ReviewImageSerializer(many=True, read_only=True, source="review_images")
 
     class Meta:
         model = Review
         fields = [
             "id",
             "review_title",
-            "product",
+            "product_id",
             "user",
-            "review_images",
+            "review_image",
             "review_keyword",
             "content",
             "created_at",
