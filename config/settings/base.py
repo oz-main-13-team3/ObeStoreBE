@@ -17,6 +17,8 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
+load_dotenv()
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
@@ -176,7 +178,6 @@ EMAIL_HOST_PASSWORD = "vslx sctc zyfs swem"
 FRONTEND_BASE_URL = "http://127.0.0.1:8000"
 
 # 네이버 소셜로그인용
-load_dotenv()
 
 NAVER_CLIENT_ID = os.getenv("NAVER_CLIENT_ID")
 NAVER_CLIENT_SECRET = os.getenv("NAVER_CLIENT_SECRET")
