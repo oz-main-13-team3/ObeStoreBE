@@ -1,16 +1,21 @@
 from django.db import models
 
 from utils.models import TimestampModel
+from utils.upload_paths import general_upload_to
 
 
 class Keyword(models.Model):
-    keyword_type = models.CharField(max_length=15)
+    KEYWORD_TYPE_CHOICES = (("positive", "긍정"), ("neutral", "중립"), ("negative", "부정"))
+    keyword_type = models.CharField(max_length=15, choices=KEYWORD_TYPE_CHOICES)
     keyword_name = models.CharField(max_length=15, unique=True)
 
     class Meta:
         db_table = "keywords"
         verbose_name = "키워드"
         verbose_name_plural = "키워드 목록"
+
+    def __str__(self):
+        return f"[{self.keyword_type}] {self.keyword_name}"
 
 
 class Review(TimestampModel):
@@ -40,7 +45,9 @@ class ReviewKeyword(models.Model):
 
 
 class ReviewImage(TimestampModel):
-    review_image = models.ImageField(null=False, blank=False)
+    upload_folder = "reviews"
+    upload_fk = "review"
+    review_image = models.ImageField(upload_to=general_upload_to)
     review = models.ForeignKey("reviews.Review", on_delete=models.SET_NULL, related_name="review_images", null=True)
 
     class Meta:

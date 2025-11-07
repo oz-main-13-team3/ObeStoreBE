@@ -1,8 +1,7 @@
-import uuid
-
 from django.db import models
 
 from utils.models import TimestampModel
+from utils.upload_paths import general_upload_to
 
 
 class Tag(models.Model):
@@ -42,8 +41,10 @@ class Brand(models.Model):
 
 
 class BrandImage(TimestampModel):
-    brand_image = models.ImageField(null=False, blank=False, unique=True)
-    brand = models.ForeignKey(Brand, on_delete=models.SET_NULL, null=True, related_name="brand_image")
+    upload_folder = "brands"
+    upload_fk = "brand"
+    brand_image = models.ImageField(upload_to=general_upload_to)
+    brand = models.ForeignKey(Brand, on_delete=models.SET_NULL, null=True, related_name="brand_images")
 
     class Meta:
         db_table = "brand_images"
@@ -75,15 +76,11 @@ class Product(TimestampModel):
         return self.product_name
 
 
-def product_image_path(instance, filename):
-    ext = filename.split(".")[-1]
-    product_id = instance.product.id if instance.product else "unassigned"
-    return f"products/{product_id}/{uuid.uuid4()}.{ext}"
-
-
 class ProductImage(TimestampModel):
-    product_card_image = models.ImageField(upload_to=product_image_path)
-    product_explain_image = models.ImageField(upload_to=product_image_path)
+    upload_folder = "products"
+    upload_fk = "product"
+    product_card_image = models.ImageField(upload_to=general_upload_to)
+    product_explain_image = models.ImageField(upload_to=general_upload_to)
     product = models.ForeignKey(Product, on_delete=models.SET_NULL, null=True, related_name="product_images")
 
     class Meta:
