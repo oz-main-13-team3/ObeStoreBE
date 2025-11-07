@@ -1,9 +1,12 @@
 from rest_framework import serializers
 
-from products.models import Product, ProductImage, ProductQna
+from products.models import BrandImage, Product, ProductImage, ProductQna
 
 
 class ProductImageSerializer(serializers.ModelSerializer):
+    product_card_image = serializers.ImageField(use_url=True)
+    product_explain_image = serializers.ImageField(use_url=True)
+
     class Meta:
         model = ProductImage
         fields = [
@@ -12,14 +15,23 @@ class ProductImageSerializer(serializers.ModelSerializer):
         ]
 
 
-class ProductSerializer(serializers.ModelSerializer):
+class BrandImageSerializer(serializers.ModelSerializer):
+    brand_image = serializers.ImageField(use_url=True)
+
+    class Meta:
+        model = BrandImage
+        fields = ["brand_image"]
+
+
+class ProductListSerializer(serializers.ModelSerializer):
     category_name = serializers.CharField(source="category.category_name", read_only=True)
     tag_name = serializers.CharField(source="tag.tag_name", read_only=True)
     brand_name = serializers.CharField(source="brand.brand_name", read_only=True)
 
     dc_value = serializers.SerializerMethodField()
 
-    product_image = ProductImageSerializer(read_only=True)
+    product_image = ProductImageSerializer(many=True, read_only=True, source="product_images")
+    brand_image = BrandImageSerializer(many=True, read_only=True, source="brand.brand_images")
 
     class Meta:
         model = Product
@@ -40,10 +52,24 @@ class ProductSerializer(serializers.ModelSerializer):
             "brand_id",
             "brand_name",
             "product_image",
+            "brand_image",
         ]
 
     def get_dc_value(self, obj):
         return int(obj.product_value * (1 - obj.discount_rate))
+
+
+class ProductDetailSerializer(ProductListSerializer):
+    reviews = serializers.SerializerMethodField()
+
+    class Meta(ProductListSerializer.Meta):
+        fields = ProductListSerializer.Meta.fields + ["reviews"]
+
+    def get_reviews(self, obj):
+        from reviews.serializers import ReviewSerializer  # 순환 참조 방지
+
+        queryset = obj.product_reviews.all()
+        return ReviewSerializer(queryset, many=True, context=self.context).data
 
 
 class ProductQnaCreateSerializer(serializers.ModelSerializer):
