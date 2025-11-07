@@ -21,7 +21,17 @@ class Order(TimestampModel):
         related_name="orders",  # 유저에서 참조
         null=True,
     )
-
+    address = models.ForeignKey(
+        "users.Address",
+        on_delete=models.SET_NULL,
+        related_name="orders",
+        null=True,
+        verbose_name="배송지",
+    )
+    subtotal = models.PositiveIntegerField(default=0, verbose_name="상품 총합")
+    discount_amount = models.PositiveIntegerField(default=0, verbose_name="할인 금액")
+    delivery_amount = models.PositiveIntegerField(default=0, verbose_name="배송비")
+    total_payment = models.PositiveIntegerField(default=0, verbose_name="최종 결제 금액")
     used_point = models.IntegerField(default=0, verbose_name="사용된 적립금")
     order_status = models.CharField(
         max_length=15, choices=ORDER_STATUS_CHOICES, default="접수 완료", verbose_name="주문상태"
@@ -54,6 +64,8 @@ class OrderProduct(TimestampModel):
         verbose_name="상품",
     )
     amount = models.PositiveIntegerField(null=True, blank=True, default=1, verbose_name="상품수량")
+    price = models.PositiveIntegerField(verbose_name="상품 주문 당시 가격")  # <- 상품의 가격 변동이 있을 수 있어서
+    total_price = models.PositiveIntegerField(verbose_name="상품 총 금액")
 
     class Meta:
         db_table = "order_products"
@@ -81,26 +93,23 @@ class Payment(TimestampModel):
         null=True,
         verbose_name="주문번호",
     )
-    payment_status = (
-        models.CharField(
-            max_length=15,
-            choices=PAYMENT_STATUS_CHOICES,
-            null=False,
-            blank=False,
-            default="ready",
-            verbose_name="결제상태",
-        ),
+    payment_status = models.CharField(
+        max_length=15,
+        choices=PAYMENT_STATUS_CHOICES,
+        null=False,
+        blank=False,
+        default="ready",
+        verbose_name="결제상태",
     )
-    payment_method = (
-        models.CharField(
-            max_length=15,
-            choices=PAYMENT_METHOD_CHOICES,
-            null=False,
-            blank=False,
-            default="tosspay",
-            verbose_name="결제수단",
-        ),
+    payment_method = models.CharField(
+        max_length=15,
+        choices=PAYMENT_METHOD_CHOICES,
+        null=False,
+        blank=False,
+        default="tosspay",
+        verbose_name="결제수단",
     )
+
     payment_amount = (models.PositiveIntegerField(null=True, blank=True, default=0, verbose_name="결제금액"),)
 
     class Meta:
