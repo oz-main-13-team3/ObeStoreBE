@@ -20,6 +20,24 @@ DATABASES = {
     }
 }
 
+# DJANGO STORAGES
+STORAGES = {
+    "default": {
+        "BACKEND": "storages.backends.s3.S3Storage",
+        "OPTIONS": {
+            "access_key": os.getenv("AWS_ACCESS_KEY_ID"),
+            "secret_key": os.getenv("AWS_SECRET_ACCESS_KEY"),
+            "bucket_name": os.getenv("AWS_STORAGE_BUCKET_NAME"),
+            "region_name": "ap-northeast-2",
+            "default_acl": "public-read",
+            "querystring_auth": False,
+        },
+    },
+    "staticfiles": {
+        "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
+    },
+}
+
 # AWS Credentials
 AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID")
 AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
@@ -29,6 +47,3 @@ AWS_S3_REGION_NAME = "ap-northeast-2"
 AWS_DEFAULT_ACL = None
 AWS_S3_FILE_OVERWRITE = False
 AWS_S3_SIGNATURE_VERSION = "s3v4"
-
-# 파일 저장소 기본값을 S3로 변경
-DEFAULT_FILE_STORAGE = "storages.backends.s3boto3.S3Boto3Storage"

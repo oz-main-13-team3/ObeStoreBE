@@ -5,11 +5,11 @@ from rest_framework.permissions import AllowAny
 from products.filters import ProductFilter
 from products.models import Product, ProductQna
 from products.permissions import IsOwnerOrAdmin
-from products.serializer import ProductQnaCreateSerializer, ProductQnaSerializer, ProductSerializer
+from products.serializers import ProductListSerializer, ProductQnaCreateSerializer, ProductQnaSerializer
 
 
 class ProductViewSet(viewsets.ReadOnlyModelViewSet):
-    serializer_class = ProductSerializer
+    serializer_class = ProductListSerializer
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_class = ProductFilter
     search_fields = ["product_name"]
@@ -26,6 +26,16 @@ class ProductViewSet(viewsets.ReadOnlyModelViewSet):
 
             queryset = queryset.annotate(review_count=Count("review"))
         return queryset
+
+    def get_serializer_class(self):
+        if self.action == "retrieve":
+            from products.serializers import ProductDetailSerializer
+
+            return ProductDetailSerializer
+        else:
+            from products.serializers import ProductListSerializer
+
+            return ProductListSerializer
 
 
 class ProductQnaViewSet(viewsets.ModelViewSet):
