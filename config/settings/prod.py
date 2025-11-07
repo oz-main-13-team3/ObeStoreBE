@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 from config.settings.base import *  # noqa
 
 DEBUG = False
-ALLOWED_HOSTS = ["*"]
+ALLOWED_HOSTS = ["3.36.63.25", "localhost", "127.0.0.1", "0.0.0.0"]
 
 load_dotenv()
 
@@ -19,6 +19,8 @@ DATABASES = {
         "PORT": os.getenv("DB_PORT", "5432"),
     }
 }
+
+STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")  # noqa
 
 # DJANGO STORAGES
 STORAGES = {
@@ -35,6 +37,9 @@ STORAGES = {
     },
     "staticfiles": {
         "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
+        "OPTIONS": {
+            "location": "static",
+        },
     },
 }
 
