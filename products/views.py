@@ -65,6 +65,54 @@ class ProductQnaViewSet(viewsets.ModelViewSet):
             return ProductQnaCreateSerializer
         return ProductQnaSerializer
 
+    @extend_schema(
+        summary="상품 모든 문의 조회",
+        description="상품 문의를 조회합니다.",
+        responses=OpenApiResponse(ProductQnaSerializer),
+    )
+    def list(self, request, *args, **kwargs):
+        return super().list(request, *args, **kwargs)
+
+    @extend_schema(
+        summary="상품의 특정 문의 조회",
+        description="상품의 특정 문의를 조회회합니다.",
+        responses=OpenApiResponse(ProductQnaSerializer),
+    )
+    def retrieve(self, request, *args, **kwargs):
+        return super().retrieve(request, *args, **kwargs)
+
+    @extend_schema(
+        summary="상품 문의 수정",
+        description="상품 문의를 수정합니다.",
+        responses=OpenApiResponse(ProductQnaSerializer),
+    )
+    def update(self, request, *args, **kwargs):
+        return super().update(request, *args, **kwargs)
+
+    @extend_schema(
+        summary="상품 문의 수정",
+        description="상품 문의를 수정합니다.",
+        responses=OpenApiResponse(ProductQnaSerializer),
+    )
+    def partial_update(self, request, *args, **kwargs):
+        return super().partial_update(request, *args, **kwargs)
+
+    @extend_schema(
+        summary="상품 문의 삭제",
+        description="상품 문의를 삭제합니다.",
+        responses=OpenApiResponse(ProductQnaSerializer),
+    )
+    def destroy(self, request, *args, **kwargs):
+        return super().destroy(request, *args, **kwargs)
+
+    @extend_schema(
+        summary="상품 문의 생성",
+        description="상품 문의를 생성합니다.",
+        responses=OpenApiResponse(ProductQnaCreateSerializer),
+    )
+    def create(self, request, *args, **kwargs):
+        return super().create(request, *args, **kwargs)
+
     def get_queryset(self):
         # Nested URL에서 product_pk를 가져와서 필터링
         product_id = self.kwargs.get("product_pk")
