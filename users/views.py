@@ -8,6 +8,7 @@ from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect
 from django.utils.crypto import get_random_string
 from django.views import View
+from drf_spectacular.utils import OpenApiExample, OpenApiParameter, OpenApiResponse, extend_schema
 from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny
@@ -46,6 +47,12 @@ def parse_email_token(token: str) -> str:
 class UsersViewSet(viewsets.ViewSet):
     permission_classes = (permissions.AllowAny,)
 
+    @extend_schema(
+        methods=["post"],
+        description="회원가입",
+        request=SignUpSerializer,
+        responses={201: {"description": "회원가입 완료"}},
+    )
     @action(detail=False, methods=["post"], url_path="signup", permission_classes=[permissions.AllowAny])
     def signup(self, request):
         ser = SignUpSerializer(data=request.data, context={"request": request})
@@ -66,6 +73,22 @@ class UsersViewSet(viewsets.ViewSet):
 
         return Response({"detail": "회원가입 완료! 이메일 인증을 진행해주세요."}, status=status.HTTP_201_CREATED)
 
+    @extend_schema(
+        methods=["get"],
+        description="내 정보 조회(GET)",
+        responses={200: MeSerializer},
+    )
+    @extend_schema(
+        methods=["patch"],
+        description="비밀번호 변경(PATCH)",
+        request=MeUpdateSerializer,
+        responses={200: {"description": "비밀번호 변경 완료"}},
+    )
+    @extend_schema(
+        methods=["delete"],
+        description="회원탈퇴(DELETE)",
+        responses={204: {"description": "삭제 완료"}},
+    )
     @action(
         detail=False,
         methods=["get", "patch", "delete"],
@@ -88,6 +111,23 @@ class UsersViewSet(viewsets.ViewSet):
         request.user.save(update_fields=["status"])
         return Response(status=status.HTTP_204_NO_CONTENT)
 
+    @extend_schema(
+        methods=["get"],
+        description="이메일 인증 링크 검증",
+        parameters=[
+            OpenApiParameter(
+                name="code",
+                type=str,
+                location=OpenApiParameter.QUERY,
+                description="이메일 인증 토큰 코드 (?code=...)",
+                required=True,
+            ),
+        ],
+        responses={
+            200: OpenApiResponse(description="이메일 인증 성공"),
+            400: OpenApiResponse(description="잘못되거나 만료된 코드"),
+        },
+    )
     @action(detail=False, methods=["get"], url_path="email/verify", permission_classes=[permissions.AllowAny])
     def email_verify(self, request):
         code = request.query_params.get("code")
@@ -112,12 +152,27 @@ class UsersViewSet(viewsets.ViewSet):
             return Response({"detail": "유효하지 않은 링크입니다."}, status=status.HTTP_400_BAD_REQUEST)
 
     # 포인트 내역 조회..
+    @extend_schema(
+        methods=["get"],
+        description="로그인된 사용자의 포인트 내역 조회",
+        responses={200: OpenApiResponse(response=PointListSerializer(many=True))},
+    )
     @action(detail=False, methods=["get"], url_path="me/points", permission_classes=[permissions.IsAuthenticated])
     def points(self, request):
         qs = Point.objects.filter(user=request.user).order_by("-created_at", "-id")
         return Response(PointListSerializer(qs, many=True).data, status=200)
 
     # 포인트 잔액 조회
+    @extend_schema(
+        methods=["get"],
+        description="로그인된 사용자의 포인트 잔액 조회",
+        responses={
+            200: OpenApiResponse(
+                description="현재 포인트 잔액",
+                examples=[OpenApiExample("잔액 예시", value={"balance": 12000}, response_only=True)],
+            )
+        },
+    )
     @action(
         detail=False, methods=["get"], url_path="me/points/balance", permission_classes=[permissions.IsAuthenticated]
     )
@@ -126,6 +181,37 @@ class UsersViewSet(viewsets.ViewSet):
         current = last.amount if last else 0
         return Response({"balance": current}, status=200)
 
+    @extend_schema(
+        methods=["get"],
+        description="사용자의 배송지 조회(GET)",
+        responses={200: OpenApiResponse(response=AddressSerializer(many=True))},
+    )
+    @extend_schema(
+        methods=["post"],
+        description="배송지 등록(POST)",
+        request=AddressSerializer,
+        responses={
+            201: OpenApiResponse(
+                description="배송지 등록 성공",
+                response=AddressSerializer,
+            )
+        },
+    )
+    @extend_schema(
+        methods=["patch"],
+        description="배송지 수정(PATCH)",
+        parameters=[
+            OpenApiParameter(
+                name="id",
+                type=int,
+                location=OpenApiParameter.QUERY,
+                description="수정할 배송지 ID (PATCH 시 필수)",
+                required=True,
+            ),
+        ],
+        request=AddressSerializer,
+        responses={200: OpenApiResponse(response=AddressSerializer)},
+    )
     @action(
         detail=False,
         methods=["get", "post", "patch", "delete"],
@@ -165,6 +251,22 @@ class UsersViewSet(viewsets.ViewSet):
 class SessionViewSet(viewsets.ViewSet):
     permission_classes = [permissions.AllowAny]
 
+    @extend_schema(
+        methods=["post"],
+        description="로그인 (access / refresh 토큰 발급)",
+        request=LoginSerializer,
+        responses={
+            200: OpenApiResponse(
+                description="로그인 성공",
+                examples=[
+                    OpenApiExample(
+                        "로그인 예시", value={"access": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."}, response_only=True
+                    )
+                ],
+            ),
+            400: OpenApiResponse(description="유효하지 않은 로그인 정보"),
+        },
+    )
     @action(detail=False, methods=["post"])
     def login(self, request):
         ser = LoginSerializer(data=request.data, context={"request": request})
@@ -196,7 +298,7 @@ class SessionViewSet(viewsets.ViewSet):
 
     @action(detail=False, methods=["post"], permission_classes=[permissions.IsAuthenticated])
     def logout(self, request):
-        # access 블랙리스ㅡㅌ
+        # access 블랙리스트
         auth = request.META.get("HTTP_AUTHORIZATION", "")
         if auth.startswith("Bearer "):
             raw_access = auth.split(" ", 1)[1]
