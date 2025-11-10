@@ -6,7 +6,7 @@ from .models import Order, OrderProduct, Payment
 
 
 class OrderProductSerializer(serializers.ModelSerializer):
-    product_name = serializers.CharField(source="product.name", read_only=True)
+    product_name = serializers.CharField(source="product.product_name", read_only=True)
 
     class Meta:
         model = OrderProduct

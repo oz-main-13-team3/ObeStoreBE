@@ -211,6 +211,19 @@ class OrderViewSet(viewsets.ModelViewSet):
                 status=200,
             )
 
+        ops = list(order.order_products.select_related("product").all())
+        product_ids = [op.product_id for op in ops if op.product_id]
+
+        locked_products = {p.id: p for p in Product.objects.select_for_update().filter(id__in=product_ids)}
+
+        for op in ops:
+            p = locked_products.get(op.product_id)
+            if (not p) or (getattr(p, "product_stock", 0) < op.amount):
+                return Response(
+                    {"detail": "재고 부족으로 결제를 진행할 수 없습니다.", "product_id": op.product_id},
+                    status=409,
+                )
+
         secret_key = settings.TOSS_SECRET_KEY
         auth = base64.b64encode((secret_key + ":").encode()).decode()
         headers = {"Authorization": f"Basic {auth}", "Content-Type": "application/json"}
@@ -240,6 +253,11 @@ class OrderViewSet(viewsets.ModelViewSet):
             order.save(update_fields=["order_status", "updated_at"])
 
             return Response({"detail": "결제 승인 실패", "code": code, "message": msg}, status=400)
+
+        for op in ops:
+            p = locked_products[op.product_id]
+            p.product_stock = p.product_stock - op.amount
+        Product.objects.bulk_update(locked_products.values(), ["product_stock"])
 
         data = resp.json()
         payment.payment_status = "success"
@@ -286,6 +304,19 @@ class TossSuccessBridge(APIView):
         if payment.payment_status == "success":
             return Response({"detail": "이미 승인됨", "receipt_url": payment.receipt_url}, status=200)
 
+        ops = list(order.order_products.select_related("product").all())
+        product_ids = [op.product_id for op in ops if op.product_id]
+
+        locked_products = {p.id: p for p in Product.objects.select_for_update().filter(id__in=product_ids)}
+
+        for op in ops:
+            p = locked_products.get(op.product_id)
+            if (not p) or (getattr(p, "product_stock", 0) < op.amount):
+                return Response(
+                    {"detail": "재고 부족으로 결제를 진행할 수 없습니다.", "product_id": op.product_id},
+                    status=409,
+                )
+
         secret_key = settings.TOSS_SECRET_KEY
         auth = base64.b64encode((secret_key + ":").encode()).decode()
         headers = {"Authorization": f"Basic {auth}", "Content-Type": "application/json"}
@@ -310,6 +341,11 @@ class TossSuccessBridge(APIView):
             order.order_status = "주문 실패"
             order.save(update_fields=["order_status", "updated_at"])
             return Response({"detail": "결제 승인 실패", "code": code, "message": msg}, status=400)
+
+        for op in ops:
+            p = locked_products[op.product_id]
+            p.product_stock = p.product_stock - op.amount
+        Product.objects.bulk_update(locked_products.values(), ["product_stock"])
 
         data = resp.json()
         payment.payment_status = "success"
