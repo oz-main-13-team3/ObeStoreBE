@@ -2,7 +2,7 @@ from rest_framework import serializers
 
 from users.models import Address
 
-from .models import Order, OrderProduct
+from .models import Order, OrderProduct, Payment
 
 
 class OrderProductSerializer(serializers.ModelSerializer):
@@ -38,7 +38,14 @@ class OrderSerializer(serializers.ModelSerializer):
             "order_products_detail",
             "created_at",
         ]
-        read_only_fields = ["order_number", "order_status", "delivery_status", "created_at"]
+        read_only_fields = [
+            "order_number",
+            "order_status",
+            "delivery_status",
+            "created_at",
+            "subtotal",
+            "total_payment",
+        ]
 
     def validate(self, data):
         if data.get("discount_amount", 0) < 0:
@@ -73,6 +80,36 @@ class OrderSerializer(serializers.ModelSerializer):
             subtotal += total_price
 
         order.subtotal = subtotal
-        order.total_payment = subtotal - order.discount_amount + order.delivery_amount
+        order.total_payment = subtotal - order.discount_amount - order.used_point + order.delivery_amount
         order.save()
         return order
+
+
+class PaymentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Payment
+        fields = [
+            "id",
+            "order",
+            "payment_status",
+            "payment_method",
+            "payment_amount",
+            "toss_order_id",
+            "toss_payment_key",
+            "receipt_url",
+            "approved_at",
+            "fail_code",
+            "fail_message",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = [
+            "payment_status",
+            "toss_payment_key",
+            "receipt_url",
+            "approved_at",
+            "fail_code",
+            "fail_message",
+            "created_at",
+            "updated_at",
+        ]
