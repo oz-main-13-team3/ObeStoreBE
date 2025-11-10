@@ -1,3 +1,4 @@
+from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import mixins, viewsets
 from rest_framework.permissions import IsAuthenticated
 
@@ -29,6 +30,17 @@ class CartItemViewSet(
     def get_queryset(self):
         return CartItem.objects.filter(cart__user=self.request.user)
 
+    @extend_schema(
+        parameters=[
+            OpenApiParameter(
+                name="product_id",
+                type=int,
+                location=OpenApiParameter.QUERY,
+                description="특정 상품 ID로 필터링",
+                required=False,
+            )
+        ]
+    )
     def perform_create(self, serializer):
         cart, _ = Cart.objects.get_or_create(user=self.request.user)
         product = serializer.validated_data["product"]
