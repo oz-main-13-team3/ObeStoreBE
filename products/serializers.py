@@ -1,3 +1,4 @@
+from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
 from products.models import BrandImage, Product, ProductImage, ProductQna
@@ -55,6 +56,7 @@ class ProductListSerializer(serializers.ModelSerializer):
             "brand_image",
         ]
 
+    @extend_schema_field(int)
     def get_dc_value(self, obj):
         return int(obj.product_value * (1 - obj.discount_rate))
 

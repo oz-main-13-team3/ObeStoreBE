@@ -57,9 +57,13 @@ INSTALLED_APPS = [
     "rest_framework_simplejwt",
     "django_redis",
     "storages",
+    "corsheaders",
+    "drf_spectacular",
+    "drf_spectacular_sidecar",
 ]
 
 MIDDLEWARE = [
+    "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -146,6 +150,7 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": ("users.auth.RedisBlacklistJWTAuthentication",),
     "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.IsAuthenticated",),
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
 }
 
 SIMPLE_JWT = {
@@ -168,22 +173,68 @@ CACHES = {
     }
 }
 
+SPECTACULAR_SETTINGS = {
+    "TITLE": "ObeStore API",
+    "DESCRIPTION": "API documentation for ObeStore service",
+    "VERSION": "1.0.0",
+}
+
 # 이메일 인증용
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
 EMAIL_HOST = "smtp.gmail.com"
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
-EMAIL_HOST_USER = "3.obestore@gmail.com"
-EMAIL_HOST_PASSWORD = "vslx sctc zyfs swem"
-FRONTEND_BASE_URL = "http://127.0.0.1:8000"
+EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER")
+EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD")
+FRONTEND_BASE_URL = os.getenv("FRONTEND_BASE_URL")
 
 # 네이버 소셜로그인용
 
 NAVER_CLIENT_ID = os.getenv("NAVER_CLIENT_ID")
 NAVER_CLIENT_SECRET = os.getenv("NAVER_CLIENT_SECRET")
-NAVER_REDIRECT_URI = "http://127.0.0.1:8000/api/users/oauth/naver/callback/"
+NAVER_REDIRECT_URI = "http://3.36.63.25:8000/api/users/oauth/naver/callback/"
+
+# 포인트 적립
 REVIEW_REWARD_RATE = Decimal("0.10")
 REVIEW_REWARD_ROUND = "floor"
 REVIEW_REWARD_MIN = None
 REVIEW_REWARD_MAX = None
 REVIEW_REWARD_PRICE_ATTR = "product_value"
+
+ORDER_POINT_EARN_RATE = Decimal("0.01")
+ORDER_POINT_MIN = None
+ORDER_POINT_MAX = None
+ORDER_POINT_ROUND = "floor"
+
+
+# 토스
+TOSS_SECRET_KEY = os.getenv("TOSS_SECRET_KEY")
+TOSS_CLIENT_KEY = os.getenv("TOSS_CLIENT_KEY")
+
+FRONT_SUCCESS_URL = os.getenv("FRONT_SUCCESS_URL", default=None)
+FRONT_FAIL_URL = os.getenv("FRONT_FAIL_URL", default=None)
+
+
+# 테스트일때 True, 프론트 연결하고 False로
+def getenv_bool(key: str, default: bool = False) -> bool:
+    v = os.getenv(key)
+    if v is None:
+        return default
+    v = v.strip().lower()
+    return v in ("1", "true", "t", "yes", "y", "on")
+
+
+USE_TOSS_BRIDGE = getenv_bool("USE_TOSS_BRIDGE", default=True)
+
+# 개발용으로 일단 전부 허용(배포시에는 프런트 주소만 명시해야함)
+CORS_ALLOW_ALL_ORIGINS = True
+# CORS_ALLOW_ORIGINS = [프런트도메인]
+
+CORS_ALLOW_HEADERS = [
+    "authorization",
+    "content-type",
+    "accept",
+    "origin",
+    "user-agent",
+    "x-requested-with",
+]
