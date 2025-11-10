@@ -118,7 +118,7 @@ class UsersViewSet(viewsets.ViewSet):
             OpenApiParameter(
                 name="code",
                 type=str,
-                location=OpenApiParameter.QUERY,
+                location="query",
                 description="이메일 인증 토큰 코드 (?code=...)",
                 required=True,
             ),
@@ -204,7 +204,7 @@ class UsersViewSet(viewsets.ViewSet):
             OpenApiParameter(
                 name="id",
                 type=int,
-                location=OpenApiParameter.QUERY,
+                location="query",
                 description="수정할 배송지 ID (PATCH 시 필수)",
                 required=True,
             ),
