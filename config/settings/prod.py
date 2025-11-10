@@ -31,14 +31,21 @@ STORAGES = {
             "secret_key": os.getenv("AWS_SECRET_ACCESS_KEY"),
             "bucket_name": os.getenv("AWS_STORAGE_BUCKET_NAME"),
             "region_name": "ap-northeast-2",
+            "location": "media",
             "default_acl": "public-read",
             "querystring_auth": False,
         },
     },
     "staticfiles": {
-        "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
+        "BACKEND": "storages.backends.s3.S3Storage",
         "OPTIONS": {
+            "access_key": os.getenv("AWS_ACCESS_KEY_ID"),
+            "secret_key": os.getenv("AWS_SECRET_ACCESS_KEY"),
+            "bucket_name": os.getenv("AWS_STORAGE_BUCKET_NAME"),
+            "region_name": "ap-northeast-2",
             "location": "static",
+            "default_acl": "public-read",
+            "querystring_auth": False,
         },
     },
 }
