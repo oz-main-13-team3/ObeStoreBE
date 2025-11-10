@@ -31,20 +31,20 @@ class IsOwnerOrAdmin(permissions.BasePermission):
 @extend_schema_view(
     list=extend_schema(
         summary="주문 목록",
-        discription="로그인한 사용자의 주문 목록을 조회합니다.",
+        description="로그인한 사용자의 주문 목록을 조회합니다.",
         responses=OrderSerializer(many=True),
         tags=["orders"],
     ),
     retrieve=extend_schema(
         summary="주문 단건 조회",
-        discription="로그인한 사용자의 주문 상세를 조회합니다.",
-        parameters=[OpenApiParameter("pk", OpenApiTypes.INT, OpenApiParameter.PATH)],
+        description="로그인한 사용자의 주문 상세를 조회합니다.",
+        parameters=[OpenApiParameter("pk", OpenApiTypes.INT, "path")],
         responses=OrderSerializer,
         tags=["orders"],
     ),
     create=extend_schema(
         summary="주문 생성",
-        discription="장바구니 기반으로 주문을 생성합니다.",
+        description="장바구니 기반으로 주문을 생성합니다.",
         request=OrderSerializer,
         responses={
             201: inline_serializer(
@@ -62,7 +62,7 @@ class IsOwnerOrAdmin(permissions.BasePermission):
     partial_update=extend_schema(
         summary="주문 취소(PATCH 전용)",
         description="주문 상태를 '주문 취소'로 변경만 허용합니다. 결제 완료 주문은 취소 불가.",
-        parameters=[OpenApiParameter("pk", OpenApiTypes.INT, OpenApiParameter.PATH)],
+        parameters=[OpenApiParameter("pk", OpenApiTypes.INT, "path")],
         request=inline_serializer(
             name="OrderCancelPatch",
             fields={"order_status": serializers.ChoiceField(choices=["주문 취소"])},
@@ -213,8 +213,8 @@ class OrderViewSet(viewsets.ModelViewSet):
 
     @extend_schema(
         summary="결제 준비",
-        discription="Toss 결제 페이지로 이동하기 전 필요한 값을 생성/반환합니다.",
-        parameters=[OpenApiParameter("pk", OpenApiTypes.INT, OpenApiParameter.PATH)],
+        description="Toss 결제 페이지로 이동하기 전 필요한 값을 생성/반환합니다.",
+        parameters=[OpenApiParameter("pk", OpenApiTypes.INT, "path")],
         request=None,
         responses=inline_serializer(
             name="PaymentReadyResponse",
@@ -233,7 +233,7 @@ class OrderViewSet(viewsets.ModelViewSet):
         tags=["orders"],
     )
     @action(detail=True, methods=["post"], permission_classes=[permissions.IsAuthenticated])
-    def ready_payment(self, request, pk=None):
+    def ready_payment(self, request):
         order = self.get_object()
         if order.user != request.user and not request.user.is_staff:
             return Response({"detail": "권한 없음"}, status=403)
@@ -422,21 +422,21 @@ class TossSuccessBridge(APIView):
             OpenApiParameter(
                 name="paymentKey",
                 type=OpenApiTypes.STR,
-                location=OpenApiParameter.QUERY,
+                location="query",
                 required=True,
                 description="Toss에서 redirect 시 넘겨주는 결제 키",
             ),
             OpenApiParameter(
                 name="orderId",
                 type=OpenApiTypes.STR,
-                location=OpenApiParameter.QUERY,
+                location="query",
                 required=True,
                 description="우리가 생성해 둔 결제용 주문ID (예: ORD-xxxx)",
             ),
             OpenApiParameter(
                 name="amount",
                 type=OpenApiTypes.INT,
-                location=OpenApiParameter.QUERY,
+                location="query",
                 required=True,
                 description="결제 금액(검증용)",
             ),
@@ -561,21 +561,21 @@ class TossFailBridge(APIView):
             OpenApiParameter(
                 name="code",
                 type=OpenApiTypes.STR,
-                location=OpenApiParameter.QUERY,
+                location="query",
                 required=False,
                 description="Toss 실패 코드",
             ),
             OpenApiParameter(
                 name="message",
                 type=OpenApiTypes.STR,
-                location=OpenApiParameter.QUERY,
+                location="query",
                 required=False,
                 description="Toss 실패 메시지",
             ),
             OpenApiParameter(
                 name="orderId",
                 type=OpenApiTypes.STR,
-                location=OpenApiParameter.QUERY,
+                location="query",
                 required=False,
                 description="우리가 생성해 둔 결제용 주문ID (있다면 전달)",
             ),
