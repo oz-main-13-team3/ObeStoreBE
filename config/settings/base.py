@@ -56,6 +56,8 @@ INSTALLED_APPS = [
     "django_redis",
     "storages",
     "corsheaders",
+    "drf_spectacular",
+    "drf_spectacular_sidecar",
 ]
 
 MIDDLEWARE = [
@@ -146,6 +148,7 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": ("users.auth.RedisBlacklistJWTAuthentication",),
     "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.IsAuthenticated",),
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
 }
 
 SIMPLE_JWT = {
@@ -166,6 +169,12 @@ CACHES = {
             "CLIENT_CLASS": "django_redis.client.DefaultClient",
         },
     }
+}
+
+SPECTACULAR_SETTINGS = {
+    "TITLE": "ObeStore API",
+    "DESCRIPTION": "API documentation for ObeStore service",
+    "VERSION": "1.0.0",
 }
 
 # 이메일 인증용
