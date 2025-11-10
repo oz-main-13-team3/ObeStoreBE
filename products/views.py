@@ -1,4 +1,5 @@
 from django_filters.rest_framework import DjangoFilterBackend
+from drf_spectacular.utils import OpenApiResponse, extend_schema
 from rest_framework import filters, viewsets
 from rest_framework.permissions import AllowAny
 
@@ -36,6 +37,22 @@ class ProductViewSet(viewsets.ReadOnlyModelViewSet):
             from products.serializers import ProductListSerializer
 
             return ProductListSerializer
+
+    @extend_schema(
+        summary="상품 리스트 조회",
+        description="상품 목록을 조회합니다. 검색/정렬/필터링 가능",
+        responses=OpenApiResponse(ProductListSerializer),
+    )
+    def list(self, request, *args, **kwargs):
+        return super().list(request, *args, **kwargs)
+
+    @extend_schema(
+        summary="상품 상세 조회",
+        description="상품 상세 정보를 조회합니다.",
+        responses=OpenApiResponse(ProductListSerializer),
+    )
+    def retrieve(self, request, *args, **kwargs):
+        return super().retrieve(request, *args, **kwargs)
 
 
 class ProductQnaViewSet(viewsets.ModelViewSet):
