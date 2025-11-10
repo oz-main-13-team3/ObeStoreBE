@@ -46,6 +46,7 @@ def parse_email_token(token: str) -> str:
 # 회원가입, 내정보, 이메일인증, 포인트, 배송지
 class UsersViewSet(viewsets.ViewSet):
     permission_classes = (permissions.AllowAny,)
+    serializer_class = serializers.Serializer
 
     @extend_schema(
         methods=["post"],
