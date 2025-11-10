@@ -31,17 +31,20 @@ class IsOwnerOrAdmin(permissions.BasePermission):
 @extend_schema_view(
     list=extend_schema(
         summary="주문 목록",
+        discription="로그인한 사용자의 주문 목록을 조회합니다.",
         responses=OrderSerializer(many=True),
         tags=["orders"],
     ),
     retrieve=extend_schema(
         summary="주문 단건 조회",
+        discription="로그인한 사용자의 주문 상세를 조회합니다.",
         parameters=[OpenApiParameter("pk", OpenApiTypes.INT, OpenApiParameter.PATH)],
         responses=OrderSerializer,
         tags=["orders"],
     ),
     create=extend_schema(
         summary="주문 생성",
+        discription="장바구니 기반으로 주문을 생성합니다.",
         request=OrderSerializer,
         responses={
             201: inline_serializer(
@@ -58,7 +61,7 @@ class IsOwnerOrAdmin(permissions.BasePermission):
     update=extend_schema(exclude=True),
     partial_update=extend_schema(
         summary="주문 취소(PATCH 전용)",
-        description="오직 주문 상태를 '주문 취소'로 변경만 허용합니다. 결제 완료 주문은 취소 불가.",
+        description="주문 상태를 '주문 취소'로 변경만 허용합니다. 결제 완료 주문은 취소 불가.",
         parameters=[OpenApiParameter("pk", OpenApiTypes.INT, OpenApiParameter.PATH)],
         request=inline_serializer(
             name="OrderCancelPatch",
@@ -209,7 +212,8 @@ class OrderViewSet(viewsets.ModelViewSet):
         return Response(serializer.data, status=200)
 
     @extend_schema(
-        summary="결제 준비 (Toss 결제 페이지 진입 전에 필요한 값)",
+        summary="결제 준비",
+        discription="Toss 결제 페이지로 이동하기 전 필요한 값을 생성/반환합니다.",
         parameters=[OpenApiParameter("pk", OpenApiTypes.INT, OpenApiParameter.PATH)],
         request=None,
         responses=inline_serializer(
@@ -287,7 +291,8 @@ class OrderViewSet(viewsets.ModelViewSet):
         )
 
     @extend_schema(
-        summary="결제 승인(서버에서 Toss confirm 호출)",
+        summary="결제 승인",
+        description="서버에서 Toss confirm 호출",
         request=inline_serializer(
             name="ApproveRequest",
             fields={
@@ -410,7 +415,8 @@ class TossSuccessBridge(APIView):
     permission_classes = [AllowAny]
 
     @extend_schema(
-        summary="Toss 결제 성공 브리지 (프론트 → 백엔드 confirm 전용)",
+        summary="Toss 결제 성공 브리지",
+        description="Toss 결제 완료 후 프론트 -> 백엔드로 리다이렉트 할 때 사용하는 브리지 엔드포인트",
         tags=["payments"],
         parameters=[
             OpenApiParameter(
@@ -548,7 +554,8 @@ class TossFailBridge(APIView):
     permission_classes = [AllowAny]
 
     @extend_schema(
-        summary="Toss 결제 실패 브리지 (프론트 → 실패 내용 전달)",
+        summary="Toss 결제 실패 브리지",
+        description="Toss 결제 실패/취소 시 프론트엔드가 실패 정보를 백엔드로 전달하는 브리지 엔드포인트",
         tags=["payments"],
         parameters=[
             OpenApiParameter(
