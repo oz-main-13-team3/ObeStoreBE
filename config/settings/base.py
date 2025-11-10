@@ -182,7 +182,7 @@ load_dotenv()
 
 NAVER_CLIENT_ID = os.getenv("NAVER_CLIENT_ID")
 NAVER_CLIENT_SECRET = os.getenv("NAVER_CLIENT_SECRET")
-NAVER_REDIRECT_URI = "http://127.0.0.1:8000/api/users/oauth/naver/callback/"
+NAVER_REDIRECT_URI = "http://3.36.63.25:8000/api/users/oauth/naver/callback/"
 
 # 포인트 적립
 REVIEW_REWARD_RATE = Decimal("0.10")
