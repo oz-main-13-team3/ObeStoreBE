@@ -173,16 +173,16 @@ EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
 EMAIL_HOST = "smtp.gmail.com"
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
-EMAIL_HOST_USER = "3.obestore@gmail.com"
-EMAIL_HOST_PASSWORD = "vslx sctc zyfs swem"
-FRONTEND_BASE_URL = "http://127.0.0.1:8000"
+EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER")
+EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD")
+FRONTEND_BASE_URL = os.getenv("FRONTEND_BASE_URL")
 
 # 네이버 소셜로그인용
 load_dotenv()
 
 NAVER_CLIENT_ID = os.getenv("NAVER_CLIENT_ID")
 NAVER_CLIENT_SECRET = os.getenv("NAVER_CLIENT_SECRET")
-NAVER_REDIRECT_URI = "http://127.0.0.1:8000/api/users/oauth/naver/callback/"
+NAVER_REDIRECT_URI = "http://3.36.63.25:8000/api/users/oauth/naver/callback/"
 
 # 포인트 적립
 REVIEW_REWARD_RATE = Decimal("0.10")
