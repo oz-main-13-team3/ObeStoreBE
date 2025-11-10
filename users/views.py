@@ -8,8 +8,8 @@ from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect
 from django.utils.crypto import get_random_string
 from django.views import View
-from drf_spectacular.utils import OpenApiExample, OpenApiParameter, OpenApiResponse, extend_schema
-from rest_framework import permissions, status, viewsets
+from drf_spectacular.utils import OpenApiExample, OpenApiParameter, OpenApiResponse, extend_schema, inline_serializer
+from rest_framework import permissions, serializers, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
@@ -296,6 +296,16 @@ class SessionViewSet(viewsets.ViewSet):
         )
         return resp
 
+    @extend_schema(
+        summary="로그아웃",
+        description="AccessToken을 이용해 로그아웃을 할 수 있습니다.",
+        request=inline_serializer(
+            name="LogoutRequest",
+            fields={"refresh": serializers.CharField(required=False, help_text="Optional refresh token")},
+        ),
+        responses={204: None},
+        tags=["session"],
+    )
     @action(detail=False, methods=["post"], permission_classes=[permissions.IsAuthenticated])
     def logout(self, request):
         # access 블랙리스트
@@ -322,6 +332,18 @@ class SessionViewSet(viewsets.ViewSet):
         resp.delete_cookie("access_token", path="/")
         return resp
 
+    @extend_schema(
+        summary="토큰 갱신",
+        description="Refresh 토큰을 이용해 새로운 access 토큰을 발급합니다. body나 쿠키에서 refresh 토큰을 받을 수 있습니다.",
+        request=inline_serializer(
+            name="TokenRefreshRequest", fields={"refresh": serializers.CharField(required=False, allow_blank=True)}
+        ),
+        responses={
+            200: inline_serializer(name="TokenRefreshResponse", fields={"access": serializers.CharField()}),
+            400: inline_serializer(name="TokenRefreshError", fields={"detail": serializers.CharField()}),
+        },
+        tags=["session"],
+    )
     @action(detail=False, methods=["post"], url_path="token/refresh")
     def token_refresh(self, request):
         refresh = request.data.get("refresh") or request.COOKIES.get("refresh_token")
@@ -339,6 +361,13 @@ class SessionViewSet(viewsets.ViewSet):
 class NaverLoginView(APIView):
     permission_classes = [AllowAny]
 
+    @extend_schema(
+        summary="네이버 로그인",
+        description="사용자를 네이버 로그인 페이지로 리다이렉트합니다.",
+        request=None,
+        responses={302: None},  # 리다이렉트 상태 코드
+        tags=["oauth"],
+    )
     def get(self, request):
         client_id = settings.NAVER_CLIENT_ID
         redirect_uri = settings.NAVER_REDIRECT_URI
