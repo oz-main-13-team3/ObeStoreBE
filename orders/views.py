@@ -7,9 +7,10 @@ from django.db import transaction
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.text import Truncator
-from rest_framework import permissions, status, viewsets
+from drf_spectacular.utils import OpenApiParameter, OpenApiTypes, extend_schema, extend_schema_view, inline_serializer
+from rest_framework import permissions, serializers, status, viewsets
 from rest_framework.decorators import action
-from rest_framework.exceptions import NotFound, ValidationError
+from rest_framework.exceptions import MethodNotAllowed, NotFound, ValidationError
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -27,10 +28,53 @@ class IsOwnerOrAdmin(permissions.BasePermission):
         return obj.user == request.user or request.user.is_staff
 
 
+@extend_schema_view(
+    list=extend_schema(
+        summary="주문 목록",
+        responses=OrderSerializer(many=True),
+        tags=["orders"],
+    ),
+    retrieve=extend_schema(
+        summary="주문 단건 조회",
+        parameters=[OpenApiParameter("pk", OpenApiTypes.INT, OpenApiParameter.PATH)],
+        responses=OrderSerializer,
+        tags=["orders"],
+    ),
+    create=extend_schema(
+        summary="주문 생성",
+        request=OrderSerializer,
+        responses={
+            201: inline_serializer(
+                name="OrderCreateResponse",
+                fields={
+                    "order_number": serializers.CharField(),
+                    "message": serializers.CharField(),
+                    "pay_amount": serializers.IntegerField(),
+                },
+            )
+        },
+        tags=["orders"],
+    ),
+    update=extend_schema(exclude=True),
+    partial_update=extend_schema(
+        summary="주문 취소(PATCH 전용)",
+        description="오직 주문 상태를 '주문 취소'로 변경만 허용합니다. 결제 완료 주문은 취소 불가.",
+        parameters=[OpenApiParameter("pk", OpenApiTypes.INT, OpenApiParameter.PATH)],
+        request=inline_serializer(
+            name="OrderCancelPatch",
+            fields={"order_status": serializers.ChoiceField(choices=["주문 취소"])},
+        ),
+        responses=OrderSerializer,
+        tags=["orders"],
+    ),
+    destroy=extend_schema(exclude=True),
+)
 class OrderViewSet(viewsets.ModelViewSet):
     queryset = Order.objects.all().select_related("user", "address").prefetch_related("order_products__product")
     serializer_class = OrderSerializer
     permission_classes = [permissions.IsAuthenticated, IsOwnerOrAdmin]
+
+    http_method_names = ["get", "post", "patch"]
 
     def get_queryset(self):
         user = self.request.user
@@ -60,7 +104,7 @@ class OrderViewSet(viewsets.ModelViewSet):
         if not cart_items.exists():
             raise ValidationError({"cart": "장바구니가 비어 있습니다."})
 
-        used_point = int(request.data.get("used_point", 0))
+        used_point = int(request.data.get("used_point") or 0)
         user_point = get_point_balance(user)
         if used_point > user_point:
             raise ValidationError({"used_point": f"보유 포인트({user_point})보다 많이 사용할 수 없습니다."})
@@ -94,8 +138,8 @@ class OrderViewSet(viewsets.ModelViewSet):
                 }
             )
 
-        discount_amount = int(request.data.get("discount_amount", 0))
-        delivery_amount = int(request.data.get("delivery_amount", 0))
+        discount_amount = int(request.data.get("discount_amount") or 0)
+        delivery_amount = int(request.data.get("delivery_amount") or 0)
         total_payment = subtotal - discount_amount - used_point + delivery_amount
         if total_payment < 0:
             raise ValidationError({"total_payment": "결제 금액이 0보다 작을 수 없습니다."})
@@ -121,6 +165,69 @@ class OrderViewSet(viewsets.ModelViewSet):
             status=status.HTTP_201_CREATED,
         )
 
+    @extend_schema(exclude=True)
+    def update(self, request, *args, **kwargs):
+        raise MethodNotAllowed("PUT")
+
+    @extend_schema(exclude=True)
+    def destroy(self, request, *args, **kwargs):
+        raise MethodNotAllowed("DELETE")
+
+    @transaction.atomic
+    def partial_update(self, request, *args, **kwargs):
+        order = self.get_object()
+
+        if order.user != request.user and not request.user.is_staff:
+            return Response({"detail": "권한 없음"}, status=403)
+
+        data = request.data or {}
+        allowed_keys = {"order_status"}
+        if set(data.keys()) - allowed_keys:
+            return Response({"detail": "order_status만 수정할 수 있습니다."}, status=400)
+
+        new_status = data.get("order_status")
+        if new_status != "주문 취소":
+            return Response({"detail": "order_status는 '주문 취소'만 허용됩니다."}, status=400)
+
+        if Payment.objects.filter(order=order, payment_status="success").exists():
+            return Response({"detail": "결제 완료 주문은 취소할 수 없습니다."}, status=409)
+
+        if order.order_status == "주문 취소":
+            serializer = self.get_serializer(order)
+            return Response(serializer.data, status=200)
+
+        if order.order_status not in ["접수 완료"]:
+            return Response(
+                {"detail": f"현재 상태({order.order_status})에서는 취소할 수 없습니다."},
+                status=409,
+            )
+
+        order.order_status = "주문 취소"
+        order.save(update_fields=["order_status", "updated_at"])
+
+        serializer = self.get_serializer(order)
+        return Response(serializer.data, status=200)
+
+    @extend_schema(
+        summary="결제 준비 (Toss 결제 페이지 진입 전에 필요한 값)",
+        parameters=[OpenApiParameter("pk", OpenApiTypes.INT, OpenApiParameter.PATH)],
+        request=None,
+        responses=inline_serializer(
+            name="PaymentReadyResponse",
+            fields={
+                "orderId": serializers.CharField(),
+                "amount": serializers.IntegerField(),
+                "successUrl": serializers.URLField(),
+                "failUrl": serializers.URLField(),
+                "clientKey": serializers.CharField(allow_null=True, required=False),
+                "orderName": serializers.CharField(),
+                "customerEmail": serializers.CharField(allow_blank=True, required=False),
+                "customerName": serializers.CharField(allow_blank=True, required=False),
+                "customerMobilePhone": serializers.CharField(allow_blank=True, required=False),
+            },
+        ),
+        tags=["orders"],
+    )
     @action(detail=True, methods=["post"], permission_classes=[permissions.IsAuthenticated])
     def ready_payment(self, request, pk=None):
         order = self.get_object()
@@ -179,6 +286,27 @@ class OrderViewSet(viewsets.ModelViewSet):
             status=status.HTTP_200_OK,
         )
 
+    @extend_schema(
+        summary="결제 승인(서버에서 Toss confirm 호출)",
+        request=inline_serializer(
+            name="ApproveRequest",
+            fields={
+                "orderId": serializers.CharField(),
+                "paymentKey": serializers.CharField(),
+                "amount": serializers.IntegerField(),
+            },
+        ),
+        responses=inline_serializer(
+            name="ApproveResponse",
+            fields={
+                "order_number": serializers.CharField(),
+                "payment_id": serializers.IntegerField(),
+                "status": serializers.CharField(),
+                "receipt_url": serializers.CharField(allow_null=True, required=False),
+            },
+        ),
+        tags=["orders"],
+    )
     @action(detail=False, methods=["post"], url_path="approve", permission_classes=[permissions.IsAuthenticated])
     @transaction.atomic
     def approve_payment(self, request):
@@ -281,6 +409,55 @@ class OrderViewSet(viewsets.ModelViewSet):
 class TossSuccessBridge(APIView):
     permission_classes = [AllowAny]
 
+    @extend_schema(
+        summary="Toss 결제 성공 브리지 (프론트 → 백엔드 confirm 전용)",
+        tags=["payments"],
+        parameters=[
+            OpenApiParameter(
+                name="paymentKey",
+                type=OpenApiTypes.STR,
+                location=OpenApiParameter.QUERY,
+                required=True,
+                description="Toss에서 redirect 시 넘겨주는 결제 키",
+            ),
+            OpenApiParameter(
+                name="orderId",
+                type=OpenApiTypes.STR,
+                location=OpenApiParameter.QUERY,
+                required=True,
+                description="우리가 생성해 둔 결제용 주문ID (예: ORD-xxxx)",
+            ),
+            OpenApiParameter(
+                name="amount",
+                type=OpenApiTypes.INT,
+                location=OpenApiParameter.QUERY,
+                required=True,
+                description="결제 금액(검증용)",
+            ),
+        ],
+        responses={
+            200: inline_serializer(
+                name="TossSuccessResponse",
+                fields={
+                    "status": serializers.CharField(),  # "success"
+                    "order_number": serializers.CharField(),  # 내부 주문번호(표시용)
+                    "receipt_url": serializers.CharField(allow_null=True, required=False),
+                },
+            ),
+            400: inline_serializer(
+                name="TossSuccessBadRequest",
+                fields={"detail": serializers.CharField()},
+            ),
+            404: inline_serializer(
+                name="TossSuccessNotFound",
+                fields={"detail": serializers.CharField()},
+            ),
+            409: inline_serializer(
+                name="TossSuccessConflict",
+                fields={"detail": serializers.CharField(), "product_id": serializers.IntegerField(required=False)},
+            ),
+        },
+    )
     @transaction.atomic
     def get(self, request):
         payment_key = request.query_params.get("paymentKey")
@@ -370,6 +547,44 @@ class TossSuccessBridge(APIView):
 class TossFailBridge(APIView):
     permission_classes = [AllowAny]
 
+    @extend_schema(
+        summary="Toss 결제 실패 브리지 (프론트 → 실패 내용 전달)",
+        tags=["payments"],
+        parameters=[
+            OpenApiParameter(
+                name="code",
+                type=OpenApiTypes.STR,
+                location=OpenApiParameter.QUERY,
+                required=False,
+                description="Toss 실패 코드",
+            ),
+            OpenApiParameter(
+                name="message",
+                type=OpenApiTypes.STR,
+                location=OpenApiParameter.QUERY,
+                required=False,
+                description="Toss 실패 메시지",
+            ),
+            OpenApiParameter(
+                name="orderId",
+                type=OpenApiTypes.STR,
+                location=OpenApiParameter.QUERY,
+                required=False,
+                description="우리가 생성해 둔 결제용 주문ID (있다면 전달)",
+            ),
+        ],
+        responses={
+            400: inline_serializer(
+                name="TossFailResponse",
+                fields={
+                    "status": serializers.CharField(),  # "fail"
+                    "code": serializers.CharField(allow_null=True, required=False),
+                    "message": serializers.CharField(allow_null=True, required=False),
+                    "orderId": serializers.CharField(allow_null=True, required=False),
+                },
+            )
+        },
+    )
     def get(self, request):
         return Response(
             {
