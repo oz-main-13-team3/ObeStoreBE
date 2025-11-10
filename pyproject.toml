@@ -22,6 +22,7 @@ pre-commit = "^4.3.0"
 requests = "^2.32.5"
 django-storages = "^1.14.6"
 boto3 = "^1.40.67"
+django-cors-headers = "^4.9.0"
 
 [tool.poetry.group.dev.dependencies]
 ruff = "^0.14.3"

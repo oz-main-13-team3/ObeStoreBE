@@ -110,7 +110,18 @@ class Payment(TimestampModel):
         verbose_name="결제수단",
     )
 
-    payment_amount = (models.PositiveIntegerField(null=True, blank=True, default=0, verbose_name="결제금액"),)
+    payment_amount = models.PositiveIntegerField(null=True, blank=True, default=0, verbose_name="결제금액")
+
+    # 토스 연동 필드
+    toss_order_id = models.CharField(max_length=100, db_index=True, unique=True)
+    toss_payment_key = models.CharField(max_length=200, null=True, blank=True, db_index=True)
+    receipt_url = models.URLField(null=True, blank=True)
+
+    approved_at = models.DateTimeField(null=True, blank=True)
+    fail_code = models.CharField(max_length=50, null=True, blank=True)
+    fail_message = models.CharField(max_length=255, null=True, blank=True)
+
+    idempotency_key = models.CharField(max_length=64, null=True, blank=True, db_index=True)
 
     class Meta:
         db_table = "payments"
