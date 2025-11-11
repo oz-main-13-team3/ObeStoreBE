@@ -76,7 +76,7 @@ ROOT_URLCONF = "config.urls"
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [],
+        "DIRS": [BASE_DIR / "templates"],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
@@ -184,7 +184,8 @@ EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER")
 EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD")
-FRONTEND_BASE_URL = os.getenv("FRONTEND_BASE_URL")
+# FRONTEND_BASE_URL = "https://obestore.o-r.kr"
+DEFAULT_FROM_EMAIL = "ObeStore <3.obestore@gmail.com>"
 
 # 네이버 소셜로그인용
 load_dotenv()
