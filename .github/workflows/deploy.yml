@@ -21,7 +21,7 @@ jobs:
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_PRIVATE_KEY }}
           script: |
-            docker system prune -af --volumes || true
+            docker system prune -f || true
             
             set -euo pipefail
             
