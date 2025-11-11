@@ -1,3 +1,5 @@
+from urllib.parse import quote
+
 import requests
 from django.conf import settings
 from django.contrib.auth import get_user_model
@@ -371,7 +373,7 @@ class NaverLoginView(APIView):
     )
     def get(self, request):
         client_id = settings.NAVER_CLIENT_ID
-        redirect_uri = settings.NAVER_REDIRECT_URI
+        redirect_uri = quote(settings.NAVER_REDIRECT_URI, safe="")
         state = get_random_string(32)
 
         request.session["naver_oauth_state"] = state
