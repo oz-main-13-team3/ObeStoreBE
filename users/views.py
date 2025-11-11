@@ -4,10 +4,11 @@ import requests
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core import signing
-from django.core.mail import send_mail
+from django.core.mail import EmailMultiAlternatives
 from django.core.signing import BadSignature, SignatureExpired
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect
+from django.template.loader import render_to_string
 from django.utils.crypto import get_random_string
 from django.views import View
 from drf_spectacular.utils import OpenApiExample, OpenApiParameter, OpenApiResponse, extend_schema, inline_serializer
@@ -52,7 +53,7 @@ class UsersViewSet(viewsets.ViewSet):
 
     @extend_schema(
         methods=["post"],
-        description="회원가입",
+        description="회원가입을 하고 이메일 인증 링크를 전송",
         request=SignUpSerializer,
         responses={201: {"description": "회원가입 완료"}},
     )
@@ -64,15 +65,31 @@ class UsersViewSet(viewsets.ViewSet):
 
         # 인증용 토큰 생성
         code = make_email_token(user.email)
-        host = request.get_host()
-        verify_url = f"{request.scheme}://{host}/users/email/verify?code={code}"
+        frontend_base = getattr(settings, "FRONTEND_BASE_URL", None)
+        if frontend_base:
+            verify_url = f"{frontend_base.rstrip('/')}/users/email/verify?code={code}"
+        else:
+            verify_url = request.build_absolute_uri(f"/users/email/verify?code={code}")
 
         if settings.DEBUG:
             print("[EMAIL VERIFY URL]", verify_url)
         else:
             subject = "[ObeStore] 이메일 인증을 완료해주세요."
-            html_message = f"링크를 클릭해 인증을 완료하세요 : {verify_url}"
-            send_mail(subject, None, settings.DEFAULT_FROM_EMAIL, [user.email], html_message=html_message)
+            from_email = settings.DEFAULT_FROM_EMAIL
+            to = [user.email]
+            html = render_to_string(
+                "emails/verify_email.html",
+                {
+                    "username": user.username,
+                    "verify_url": verify_url,
+                    "preheader": "버튼을 눌러 ObeStore 이메일 인증을 완료하세요.",
+                },
+            )
+            text = f"다음 링크를 클릭해 인증을 완료하세요:\n{verify_url}"
+
+            msg = EmailMultiAlternatives(subject, text, from_email, to)
+            msg.attach_alternative(html, "text/html")
+            msg.send(fail_silently=False)
 
         return Response({"detail": "회원가입 완료! 이메일 인증을 진행해주세요."}, status=status.HTTP_201_CREATED)
 
@@ -143,10 +160,10 @@ class UsersViewSet(viewsets.ViewSet):
             if user.status != "active":
                 user.status = "active"
                 user.save(update_fields=["status"])
-
+            frontend_base = getattr(settings, "FRONTEND_BASE_URL", None)
+            if frontend_base:
+                return redirect(f"{frontend_base.rstrip('/')}/email-verified")
             return Response({"detail": "이메일 인증이 완료되었습니다."}, status=200)
-            # 추후 변경
-            # return redirect(f"{getattr(settings, 'FRONTEND_BASE_URL', '/')}/email-verified")
         except SignatureExpired:
             return Response(
                 {"detail": "인증 링크가 만료되었습니다. 재발송을 요청하세요."}, status=status.HTTP_400_BAD_REQUEST
@@ -279,6 +296,8 @@ class SessionViewSet(viewsets.ViewSet):
         resp = Response({"access": tokens["access"]}, status=200)
         secure = not settings.DEBUG
         refresh_age = int(settings.SIMPLE_JWT["REFRESH_TOKEN_LIFETIME"].total_seconds())
+        access_age = int(settings.SIMPLE_JWT["ACCESS_TOKEN_LIFETIME"].total_seconds())
+
         resp.set_cookie(
             "refresh_token",
             tokens["refresh"],
@@ -291,7 +310,7 @@ class SessionViewSet(viewsets.ViewSet):
         resp.set_cookie(
             "access_token",
             tokens["access"],
-            max_age=refresh_age,
+            max_age=access_age,
             secure=secure,
             httponly=True,
             samesite="Lax",
