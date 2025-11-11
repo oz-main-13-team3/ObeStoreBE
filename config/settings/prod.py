@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 from config.settings.base import *  # noqa
 
 DEBUG = False
-ALLOWED_HOSTS = ["3.36.63.25", "localhost", "127.0.0.1", "0.0.0.0"]
+ALLOWED_HOSTS = ["3.36.63.25", "localhost", "127.0.0.1", "0.0.0.0", "www.obestore.o-r.kr", "obestore.o-r.kr"]
 
 load_dotenv()
 
