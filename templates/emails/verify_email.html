@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>이메일 인증</title>
+  <!-- 일부 클라이언트는 meta preheader를 무시하므로, 숨김 div 방식도 함께 사용 -->
+  <meta name="preheader" content="버튼을 눌러 ObeStore 이메일 인증을 완료하세요.">
+  <style>
+    @media (prefers-color-scheme: dark) {
+      .card { background: #1e1e1e !important; color: #eaeaea !important; }
+      .muted { color: #b5b5b5 !important; }
+    }
+    a { text-decoration: none; }
+  </style>
+</head>
+<body style="margin:0;padding:0;background:#f4f6f8;font-family:Apple SD Gothic Neo, Malgun Gothic, 'Noto Sans KR', Arial, sans-serif;">
+  <!-- Hidden preheader text (받은편지함 미리보기용, 본문에 보이지 않음) -->
+  <div style="display:none!important;visibility:hidden;opacity:0;color:transparent;
+              height:0;max-height:0;overflow:hidden;mso-hide:all;font-size:1px;
+              line-height:1px;">
+    {{ preheader }}
+  </div>
+
+  <!-- 전체 래퍼 -->
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#f4f6f8;padding:24px 0;">
+    <tr>
+      <td align="center">
+        <!-- 카드 -->
+        <table role="presentation" width="560" cellspacing="0" cellpadding="0" border="0" class="card"
+               style="width:560px;max-width:560px;background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 6px 18px rgba(0,0,0,0.08);">
+          <!-- 헤더 -->
+          <tr>
+            <td style="padding:24px 28px;background:#0f172a;">
+              <table width="100%" role="presentation">
+                <tr>
+                  <td align="left">
+                    <!-- 로고 텍스트(이미지 쓰고 싶으면 <img ...> 로 교체) -->
+                    <div style="color:#ffffff;font-size:20px;font-weight:700;letter-spacing:0.2px;">ObeStore</div>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- 콘텐츠 -->
+          <tr>
+            <td style="padding:28px;">
+              <div style="font-size:18px;font-weight:700;color:#0f172a;margin-bottom:8px;">
+                {{ username }}님, 안녕하세요 👋
+              </div>
+              <div style="font-size:14px;line-height:22px;color:#334155;">
+                아래 버튼을 눌러 <b>이메일 인증</b>을 완료해주세요. 보안을 위해 이 링크는 일정 시간 후 만료됩니다.
+              </div>
+
+              <!-- 버튼 -->
+              <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin:24px 0;">
+                <tr>
+                  <td align="center">
+                    <a href="{{ verify_url }}"
+                       style="display:inline-block;background:#2563eb;color:#ffffff;font-weight:700;font-size:14px;padding:14px 22px;border-radius:8px;">
+                      이메일 인증하기
+                    </a>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- 대체 링크 -->
+              <div class="muted" style="font-size:12px;line-height:18px;color:#64748b;">
+                버튼이 동작하지 않으면 아래 링크를 복사하여 브라우저 주소창에 붙여넣으세요:
+              </div>
+              <div style="margin-top:8px;font-size:12px;line-height:18px;color:#475569;word-break:break-all;">
+                <a href="{{ verify_url }}" style="color:#2563eb;">{{ verify_url }}</a>
+              </div>
+
+              <!-- 구분선 -->
+              <div style="height:1px;background:#e5e7eb;margin:24px 0;"></div>
+
+              <div class="muted" style="font-size:12px;line-height:18px;color:#94a3b8;">
+                본 메일은 발신 전용입니다.
+              </div>
+            </td>
+          </tr>
+
+          <!-- 푸터 -->
+          <tr>
+            <td style="padding:16px 28px 24px 28px;">
+              <div class="muted" style="text-align:center;font-size:11px;color:#94a3b8;">
+                © 2025 ObeStore. All rights reserved.
+              </div>
+            </td>
+          </tr>
+        </table>
+        <!-- 카드 끝 -->
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
