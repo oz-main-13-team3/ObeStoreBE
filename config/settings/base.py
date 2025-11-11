@@ -191,7 +191,7 @@ load_dotenv()
 
 NAVER_CLIENT_ID = os.getenv("NAVER_CLIENT_ID")
 NAVER_CLIENT_SECRET = os.getenv("NAVER_CLIENT_SECRET")
-NAVER_REDIRECT_URI = "https://obstore.o-r.kr:8000/users/oauth/naver/callback/"
+NAVER_REDIRECT_URI = "https://wwww.obstore.o-r.kr:8000/users/oauth/naver/callback/"
 
 # 포인트 적립
 REVIEW_REWARD_RATE = Decimal("0.10")
