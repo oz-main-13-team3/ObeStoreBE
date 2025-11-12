@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from decimal import ROUND_CEILING, ROUND_FLOOR, ROUND_HALF_UP, Decimal
+from decimal import ROUND_CEILING, ROUND_FLOOR, ROUND_HALF_UP, Decimal, InvalidOperation
 
 from django.conf import settings
 from django.db import transaction
@@ -49,7 +49,7 @@ def _get_product_price(review: "Review") -> int:
         return 0
     try:
         return int(Decimal(str(price)))
-    except Exception:
+    except (ValueError, TypeError, InvalidOperation):  # 에러가 광범위하다고 되어있어서 넣었습니다.
         return 0
 
 
@@ -95,7 +95,7 @@ def award_points_for_review(sender, instance: "Review", created: bool, **kwargs)
             apply_point_delta(user, reward, event_key=event_key)
         except PointError:
             pass
-        except Exception:
+        except (ValueError, TypeError):
             pass
 
     transaction.on_commit(_apply)
