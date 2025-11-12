@@ -1,5 +1,5 @@
 # 베이스 이미지
-FROM python:3.13-slim
+FROM python:3.13-slim-bullseye
 
 # 환경 변수 설정
 ENV PYTHONUNBUFFERED=1
@@ -7,10 +7,9 @@ ENV PYTHONDONTWRITEBYTECODE=1
 ENV PATH="/root/.local/bin:${PATH}"
 
 # 시스템 필수 패키지 설치 (Poetry 설치 및 빌드 도구)
-RUN apt-get update \
- && apt-get install -y curl build-essential \
- && apt-get clean \
- && rm -rf /var/lib/apt/lists/*
+RUN apt-get update
+RUN apt-get install -y --no-install-recommends curl build-essential postgresql-client
+RUN apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Poetry 설치
 RUN curl -sSL https://install.python-poetry.org | python3 - \
