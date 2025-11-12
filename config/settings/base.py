@@ -229,7 +229,7 @@ USE_TOSS_BRIDGE = getenv_bool("USE_TOSS_BRIDGE", default=True)
 
 # 개발용으로 일단 전부 허용(배포시에는 프런트 주소만 명시해야함)
 CORS_ALLOW_ALL_ORIGINS = True
-# CORS_ALLOW_ORIGINS = [프런트도메인]
+CORS_ALLOWED_ORIGINS = ["http://localhost:5173/", "https://obe-store.vercel.app/"]
 
 CORS_ALLOW_HEADERS = [
     "authorization",
