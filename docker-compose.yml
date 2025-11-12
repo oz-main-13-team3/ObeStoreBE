@@ -1,26 +1,6 @@
 version: '3.9'
 
 services:
-  db:
-    container_name: db
-    image: postgres:17
-    restart: always
-    env_file:
-      - ./envs/.env.prod
-    ports:
-      - "${DB_PORT:-5432}:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    networks:
-      - ws
-    healthcheck:
-#      test: [ "CMD", "pg_isready", "-U", "postgres" ]
-      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 5s
-
   redis:
     container_name: redis
     image: redis:7
@@ -40,9 +20,6 @@ services:
       - DJANGO_SETTINGS_MODULE=config.settings.prod
     ports:
       - "8000:8000"
-    depends_on:
-      db:
-        condition: service_healthy
     volumes:
       - .:/app
     networks:
