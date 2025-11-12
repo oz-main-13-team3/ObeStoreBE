@@ -1,13 +1,12 @@
+from django.urls import include, path
 from rest_framework.routers import DefaultRouter
-from rest_framework_nested.routers import NestedDefaultRouter
 
-from products.views import ProductQnaViewSet, ProductViewSet
+from products.views import ProductQnaListView, ProductViewSet
 
 router = DefaultRouter()
 router.register("", ProductViewSet, basename="product")
 
-# Nested router: /products/{product_id}/qna/
-products_router = NestedDefaultRouter(router, "", lookup="product")
-products_router.register("qna", ProductQnaViewSet, basename="product-qna")
-
-urlpatterns = router.urls + products_router.urls
+urlpatterns = [
+    path("", include(router.urls)),
+    path("<int:product_pk>/qna/", ProductQnaListView.as_view(), name="product-qna-list"),
+]
