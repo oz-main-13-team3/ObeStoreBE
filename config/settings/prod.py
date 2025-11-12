@@ -64,3 +64,8 @@ AWS_S3_CUSTOM_DOMAIN = f"{AWS_STORAGE_BUCKET_NAME}.s3.{AWS_S3_REGION_NAME}.amazo
 
 STATIC_URL = f"https://{AWS_S3_CUSTOM_DOMAIN}/static/"
 MEDIA_URL = f"https://{AWS_S3_CUSTOM_DOMAIN}/media/"
+
+# CSRF
+CSRF_TRUSTED_ORIGINS = ["https://www.obestore.o-r.kr", "https://obestore.o-r.kr"]
+CSRF_COOKIE_SECURE = True
+SESSION_COOKIE_SECURE = True
