@@ -2,11 +2,10 @@ from django_filters.rest_framework import DjangoFilterBackend
 from drf_spectacular.utils import OpenApiResponse, extend_schema, extend_schema_view
 from rest_framework import filters, viewsets
 from rest_framework.generics import ListAPIView
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAdminUser, IsAuthenticated
 
 from products.filters import ProductFilter
 from products.models import Product, ProductQna
-from products.permissions import IsOwnerOrAdmin
 from products.serializers import ProductListSerializer, ProductQnaCreateSerializer, ProductQnaSerializer
 
 
@@ -59,12 +58,20 @@ class ProductViewSet(viewsets.ReadOnlyModelViewSet):
 class ProductQnaViewSet(viewsets.ModelViewSet):
     queryset = ProductQna.objects.all()
     serializer_class = ProductQnaSerializer
-    permission_classes = [IsOwnerOrAdmin]
 
     def get_serializer_class(self):
         if self.action == "create":
             return ProductQnaCreateSerializer
         return ProductQnaSerializer
+
+    def get_permissions(self):
+        if self.action in ["update", "partial_update"]:
+            permission_classes = [IsAdminUser]
+        elif self.action == "create":
+            permission_classes = [IsAuthenticated]
+        else:
+            permission_classes = []
+        return [permission() for permission in permission_classes]
 
     @extend_schema(
         summary="상품 모든 문의 조회",
