@@ -238,3 +238,35 @@ CORS_ALLOW_HEADERS = [
     "user-agent",
     "x-requested-with",
 ]
+
+LOG_DIR = os.path.join(BASE_DIR, "logs")
+os.makedirs(LOG_DIR, exist_ok=True)
+
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "verbose": {
+            "format": "[{asctime}] {levelname} [{name}:{lineno}] {message}",
+            "style": "{",
+        },
+    },
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+            "formatter": "verbose",
+        },
+        "file": {
+            "class": "logging.FileHandler",
+            "filename": os.path.join(LOG_DIR, "django.log"),
+            "formatter": "verbose",
+        },
+    },
+    "loggers": {
+        "users.views": {
+            "handlers": ["console", "file"],
+            "level": "DEBUG",
+            "propagate": True,
+        },
+    },
+}

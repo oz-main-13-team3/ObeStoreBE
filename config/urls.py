@@ -7,7 +7,7 @@ from products.views import ProductQnaViewSet
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("", include("users.urls")),
-    path("users/carts/", include("carts.urls")),
+    path("carts/", include("carts.urls")),
     path("products/", include("products.urls")),
     path("qna/", ProductQnaViewSet.as_view({"get": "list", "post": "create"}), name="qna-list-create"),
     path(

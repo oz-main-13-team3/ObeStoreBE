@@ -1,3 +1,4 @@
+import logging
 from urllib.parse import quote
 
 import requests
@@ -34,6 +35,8 @@ from .serializers import (
 User = get_user_model()
 
 EMAIL_VERIFY_SALT = "verify-email"
+
+logger = logging.getLogger(__name__)
 
 
 def make_email_token(email: str) -> str:
@@ -72,7 +75,7 @@ class UsersViewSet(viewsets.ViewSet):
             verify_url = request.build_absolute_uri(f"/users/email/verify?code={code}")
 
         if settings.DEBUG:
-            print("[EMAIL VERIFY URL]", verify_url)
+            logger.debug(f"[EMAIL VERIFY URL] {verify_url}")
         else:
             subject = "[ObeStore] 이메일 인증을 완료해주세요."
             from_email = settings.DEFAULT_FROM_EMAIL
