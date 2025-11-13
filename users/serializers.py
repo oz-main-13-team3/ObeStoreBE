@@ -32,6 +32,7 @@ class SignUpSerializer(serializers.ModelSerializer):
         pwd = validated_data.pop("password")
         try:
             user = User.objects.create_user(password=pwd, **validated_data, status="ready")
+            user._login_type = "email"
             return user
         except IntegrityError:
             raise serializers.ValidationError({"email": "이미 등록된 이메일입니다."})
@@ -67,6 +68,9 @@ class MeUpdateSerializer(serializers.ModelSerializer):
         fields = ["password"]
 
     def validate_password(self, value):
+        if self.instance.social_logins.exists():
+            raise serializers.ValidationError("소셜 로그인 회원은 비밀번호를 변경할 수 없습니다.")
+
         password_validation.validate_password(value, user=self.instance)
         return value
 

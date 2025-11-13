@@ -32,7 +32,6 @@ pre-commit = "^4.3.0"
 line-length = 120
 target-version = "py313"
 exclude = ["**/migrations/*", "**/__pycache__/*", ".venv/*"]
-format = "ruff"
 
 [tool.ruff.lint]
 select = ["E", "F", "I"]

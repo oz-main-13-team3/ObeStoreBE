@@ -94,7 +94,7 @@ class UsersViewSet(viewsets.ViewSet):
             msg.attach_alternative(html, "text/html")
             msg.send(fail_silently=False)
 
-        return Response({"detail": "회원가입 완료! 이메일 인증을 진행해주세요."}, status=status.HTTP_201_CREATED)
+        return Response({"detail": "회원가입 완료! 이메일 인증을 진행해주세요.","login_type": getattr(user, "_login_type", "email"),}, status=status.HTTP_201_CREATED)
 
     @extend_schema(
         methods=["get"],
@@ -471,6 +471,7 @@ class NaverCallbackView(View):
                 "email": email,
                 "username": name,
                 "nickname": nickname,
+                "login_type": "naver",
             }
         )
         response.set_cookie("access_token", str(access), httponly=True, samesite="Lax")
