@@ -192,7 +192,7 @@ load_dotenv()
 
 NAVER_CLIENT_ID = os.getenv("NAVER_CLIENT_ID")
 NAVER_CLIENT_SECRET = os.getenv("NAVER_CLIENT_SECRET")
-NAVER_REDIRECT_URI = "https://www.obestore.o-r.kr/oauth/naver/callback/"
+NAVER_REDIRECT_URI = "https://www.obestore.o-r.kr/auth/naver/callback/"
 
 # 포인트 적립
 REVIEW_REWARD_RATE = Decimal("0.10")
@@ -264,5 +264,14 @@ LOGGING = {
             "level": "DEBUG",
             "propagate": True,
         },
+    "django": {
+        "handlers": ["console", "file"],
+        "level": "INFO",
+        "propagate": True
+    },
+    "django.db.backends":
+        {"handlers": ["console", "file"],
+         "level": "INFO",
+         "propagate": True},
     },
 }
