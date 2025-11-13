@@ -264,5 +264,14 @@ LOGGING = {
             "level": "DEBUG",
             "propagate": True,
         },
+    "django": {
+        "handlers": ["console", "file"],
+        "level": "INFO",
+        "propagate": True
+    },
+    "django.db.backends":
+        {"handlers": ["console", "file"],
+         "level": "INFO",
+         "propagate": True},
     },
 }
