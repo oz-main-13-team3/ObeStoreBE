@@ -211,11 +211,7 @@ ORDER_POINT_ROUND = "floor"
 TOSS_SECRET_KEY = os.getenv("TOSS_SECRET_KEY")
 TOSS_CLIENT_KEY = os.getenv("TOSS_CLIENT_KEY")
 
-FRONT_SUCCESS_URL = os.getenv("FRONT_SUCCESS_URL", default=None)
-FRONT_FAIL_URL = os.getenv("FRONT_FAIL_URL", default=None)
 
-
-# 테스트일때 True, 프론트 연결하고 False로
 def getenv_bool(key: str, default: bool = False) -> bool:
     v = os.getenv(key)
     if v is None:
