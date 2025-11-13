@@ -29,14 +29,15 @@ ruff = "^0.14.3"
 pre-commit = "^4.3.0"
 
 [tool.ruff]
-line-length = 120
 target-version = "py313"
 exclude = ["**/migrations/*", "**/__pycache__/*", ".venv/*"]
-format = "ruff"
 
 [tool.ruff.lint]
 select = ["E", "F", "I"]
 ignore = ["E501"]
+
+[tool.ruff.format]
+max-line-length = 120
 
 [build-system]
 requires = ["poetry-core"]
