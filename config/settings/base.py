@@ -9,7 +9,7 @@ https://docs.djangoproject.com/en/5.2/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
-
+import ast
 import os
 from datetime import timedelta
 from decimal import Decimal
@@ -225,7 +225,7 @@ USE_TOSS_BRIDGE = getenv_bool("USE_TOSS_BRIDGE", default=True)
 
 # 개발용으로 일단 전부 허용(배포시에는 프런트 주소만 명시해야함)
 CORS_ALLOW_ALL_ORIGINS = True
-CORS_ALLOWED_ORIGINS = ["http://localhost:5173/", "https://obe-store.vercel.app/"]
+CORS_ALLOWED_ORIGINS = ast.literal_eval(os.getenv("CORS_ALLOWED_ORIGINS", "[]"))
 
 CORS_ALLOW_HEADERS = [
     "authorization",
