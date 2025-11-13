@@ -113,3 +113,15 @@ class PaymentSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
         ]
+
+
+class ReadyPaymentResponseSerializer(serializers.Serializer):
+    orderId = serializers.CharField()
+    amount = serializers.IntegerField()
+    successUrl = serializers.URLField()
+    failUrl = serializers.URLField()
+    clientKey = serializers.CharField(allow_null=True, required=False)
+    orderName = serializers.CharField()
+    customerEmail = serializers.CharField(allow_blank=True, required=False)
+    customerName = serializers.CharField(allow_blank=True, required=False)
+    customerMobilePhone = serializers.CharField(allow_blank=True, required=False)
