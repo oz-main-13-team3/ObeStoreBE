@@ -6,15 +6,10 @@ from products.models import Product
 from users.models import User
 from utils.models import TimestampModel
 
+from .choices import DeliveryStatus, OrderStatus, PaymentMethod, PaymentStatus
+
 
 class Order(TimestampModel):
-    ORDER_STATUS_CHOICES = [
-        ("접수 완료", "접수 완료"),
-        ("주문 실패", "주문 실패"),
-        ("주문 완료", "주문 완료"),
-    ]
-    DELIVERY_STATUS_CHOICES = [("배송 준비", "배송 준비"), ("배송 중", "배송 중"), ("배송 완료", "배송 완료")]
-
     user = models.ForeignKey(
         User,
         on_delete=models.SET_NULL,
@@ -33,11 +28,9 @@ class Order(TimestampModel):
     delivery_amount = models.PositiveIntegerField(default=0, verbose_name="배송비")
     total_payment = models.PositiveIntegerField(default=0, verbose_name="최종 결제 금액")
     used_point = models.IntegerField(default=0, verbose_name="사용된 적립금")
-    order_status = models.CharField(
-        max_length=15, choices=ORDER_STATUS_CHOICES, default="접수 완료", verbose_name="주문상태"
-    )
+    order_status = models.CharField(max_length=15, choices=OrderStatus, default="접수 완료", verbose_name="주문상태")
     delivery_status = models.CharField(
-        max_length=15, choices=DELIVERY_STATUS_CHOICES, default="배송 준비", verbose_name="배송상태"
+        max_length=15, choices=DeliveryStatus, default="배송 준비", verbose_name="배송상태"
     )
 
     order_number = models.UUIDField(
@@ -78,14 +71,6 @@ class OrderProduct(TimestampModel):
 
 
 class Payment(TimestampModel):
-    PAYMENT_STATUS_CHOICES = [
-        ("ready", "ready"),
-        ("success", "success"),
-        ("failed", "failed"),
-    ]
-    PAYMENT_METHOD_CHOICES = [
-        ("tosspay", "tosspay"),
-    ]
     order = models.ForeignKey(
         "Order",
         on_delete=models.SET_NULL,
@@ -95,7 +80,7 @@ class Payment(TimestampModel):
     )
     payment_status = models.CharField(
         max_length=15,
-        choices=PAYMENT_STATUS_CHOICES,
+        choices=PaymentStatus,
         null=False,
         blank=False,
         default="ready",
@@ -103,7 +88,7 @@ class Payment(TimestampModel):
     )
     payment_method = models.CharField(
         max_length=15,
-        choices=PAYMENT_METHOD_CHOICES,
+        choices=PaymentMethod,
         null=False,
         blank=False,
         default="tosspay",
