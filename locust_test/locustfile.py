@@ -12,7 +12,7 @@ class WebsiteUser(HttpUser):
     def on_start(self):
         # 유저 로그인
         resp = self.client.post(
-            "/oauth/login",
+            "/auth/login",
             json={"email": "test@test.com", "password": "test1234"},
         )
         self.jwt = resp.json()["access"]
