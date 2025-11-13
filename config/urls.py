@@ -15,7 +15,7 @@ urlpatterns = [
         ProductQnaViewSet.as_view({"get": "retrieve", "patch": "partial_update", "delete": "destroy"}),
         name="qna-detail",
     ),
-    path("orders/", include(("orders.urls", "orders"), namespace="orders")),
+    path("", include("orders.urls")),
     path("reviews/", include("reviews.urls")),
     # OpenAPI JSON Schema
     path("schema/", SpectacularAPIView.as_view(), name="schema"),
