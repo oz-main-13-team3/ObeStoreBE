@@ -1,6 +1,7 @@
 from django_filters.rest_framework import DjangoFilterBackend
-from drf_spectacular.utils import OpenApiResponse, extend_schema
+from drf_spectacular.utils import OpenApiResponse, extend_schema, extend_schema_view
 from rest_framework import filters, viewsets
+from rest_framework.generics import ListAPIView
 from rest_framework.permissions import AllowAny
 
 from products.filters import ProductFilter
@@ -15,7 +16,7 @@ class ProductViewSet(viewsets.ReadOnlyModelViewSet):
     filterset_class = ProductFilter
     search_fields = ["product_name"]
     ordering_fields = ["sales", "product_value", "created_at", "review_count"]
-    ordering = ["-created_at"]  # 기본 정렬
+    ordering = ["-created_at"]
     permission_classes = [AllowAny]
 
     def get_queryset(self):
@@ -57,7 +58,7 @@ class ProductViewSet(viewsets.ReadOnlyModelViewSet):
 
 class ProductQnaViewSet(viewsets.ModelViewSet):
     queryset = ProductQna.objects.all()
-    serializer_class = ProductQnaSerializer  # 기본값 (조회용)
+    serializer_class = ProductQnaSerializer
     permission_classes = [IsOwnerOrAdmin]
 
     def get_serializer_class(self):
@@ -75,7 +76,7 @@ class ProductQnaViewSet(viewsets.ModelViewSet):
 
     @extend_schema(
         summary="상품의 특정 문의 조회",
-        description="상품의 특정 문의를 조회회합니다.",
+        description="상품의 특정 문의를 조회합니다.",
         responses=OpenApiResponse(ProductQnaSerializer),
     )
     def retrieve(self, request, *args, **kwargs):
@@ -114,8 +115,22 @@ class ProductQnaViewSet(viewsets.ModelViewSet):
         return super().create(request, *args, **kwargs)
 
     def get_queryset(self):
-        # Nested URL에서 product_pk를 가져와서 필터링
-        product_id = self.kwargs.get("product_pk")
-        if product_id:
-            return ProductQna.objects.filter(product_id=product_id)
         return ProductQna.objects.all()
+
+
+@extend_schema_view(
+    get=extend_schema(
+        summary="특정 상품 모든 문의 조회",
+        description="특정 상품의 모든 문의를 조회합니다.",
+        responses=OpenApiResponse(ProductQnaSerializer),
+    )
+)
+class ProductQnaListView(ListAPIView):
+    serializer_class = ProductQnaSerializer
+
+    def get_queryset(self):
+        product_id = self.kwargs.get("product_pk")
+        return ProductQna.objects.filter(product_id=product_id)
+
+    def list(self, request, *args, **kwargs):
+        return super().list(request, *args, **kwargs)

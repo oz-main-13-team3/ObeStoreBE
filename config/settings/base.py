@@ -212,11 +212,7 @@ ORDER_POINT_ROUND = "floor"
 TOSS_SECRET_KEY = os.getenv("TOSS_SECRET_KEY")
 TOSS_CLIENT_KEY = os.getenv("TOSS_CLIENT_KEY")
 
-FRONT_SUCCESS_URL = os.getenv("FRONT_SUCCESS_URL", default=None)
-FRONT_FAIL_URL = os.getenv("FRONT_FAIL_URL", default=None)
 
-
-# 테스트일때 True, 프론트 연결하고 False로
 def getenv_bool(key: str, default: bool = False) -> bool:
     v = os.getenv(key)
     if v is None:
@@ -239,3 +235,35 @@ CORS_ALLOW_HEADERS = [
     "user-agent",
     "x-requested-with",
 ]
+
+LOG_DIR = os.path.join(BASE_DIR, "logs")
+os.makedirs(LOG_DIR, exist_ok=True)
+
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "verbose": {
+            "format": "[{asctime}] {levelname} [{name}:{lineno}] {message}",
+            "style": "{",
+        },
+    },
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+            "formatter": "verbose",
+        },
+        "file": {
+            "class": "logging.FileHandler",
+            "filename": os.path.join(LOG_DIR, "django.log"),
+            "formatter": "verbose",
+        },
+    },
+    "loggers": {
+        "users.views": {
+            "handlers": ["console", "file"],
+            "level": "DEBUG",
+            "propagate": True,
+        },
+    },
+}

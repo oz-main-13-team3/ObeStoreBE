@@ -1,3 +1,4 @@
+import logging
 from urllib.parse import quote
 
 import requests
@@ -34,6 +35,8 @@ from .serializers import (
 User = get_user_model()
 
 EMAIL_VERIFY_SALT = "verify-email"
+
+logger = logging.getLogger(__name__)
 
 
 def make_email_token(email: str) -> str:
@@ -72,7 +75,7 @@ class UsersViewSet(viewsets.ViewSet):
             verify_url = request.build_absolute_uri(f"/users/email/verify?code={code}")
 
         if settings.DEBUG:
-            print("[EMAIL VERIFY URL]", verify_url)
+            logger.debug(f"[EMAIL VERIFY URL] {verify_url}")
         else:
             subject = "[ObeStore] 이메일 인증을 완료해주세요."
             from_email = settings.DEFAULT_FROM_EMAIL
@@ -91,7 +94,7 @@ class UsersViewSet(viewsets.ViewSet):
             msg.attach_alternative(html, "text/html")
             msg.send(fail_silently=False)
 
-        return Response({"detail": "회원가입 완료! 이메일 인증을 진행해주세요."}, status=status.HTTP_201_CREATED)
+        return Response({"detail": "회원가입 완료! 이메일 인증을 진행해주세요.","login_type": getattr(user, "_login_type", "email"),}, status=status.HTTP_201_CREATED)
 
     @extend_schema(
         methods=["get"],
@@ -468,6 +471,7 @@ class NaverCallbackView(View):
                 "email": email,
                 "username": name,
                 "nickname": nickname,
+                "login_type": "naver",
             }
         )
         response.set_cookie("access_token", str(access), httponly=True, samesite="Lax")
