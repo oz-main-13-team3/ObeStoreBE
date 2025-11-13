@@ -26,16 +26,13 @@ drf-spectacular-sidecar = "^2025.10.1"
 
 [tool.poetry.group.dev.dependencies]
 ruff = "^0.14.3"
-black = "^25.9.0"
 pre-commit = "^4.3.0"
-
-[tool.black]
-line-length = 120
 
 [tool.ruff]
 line-length = 120
-exclude = ["**/migrations/*"]
 target-version = "py313"
+exclude = ["**/migrations/*", "**/__pycache__/*", ".venv/*"]
+format = "ruff"
 
 [tool.ruff.lint]
 select = ["E", "F", "I"]
