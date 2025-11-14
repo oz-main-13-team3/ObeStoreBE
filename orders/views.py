@@ -1,4 +1,8 @@
+from urllib.parse import urlencode
+
+from django.conf import settings
 from django.db import transaction
+from django.shortcuts import redirect
 from drf_spectacular.utils import extend_schema
 from rest_framework import permissions, status, viewsets
 from rest_framework.exceptions import MethodNotAllowed
@@ -149,14 +153,28 @@ class TossSuccessBridge(APIView):
             return Response(detail, status=400)
 
         order = payment.order
-        return Response(
+
+        front_result = getattr(settings, "FRONT_RESULT_URL, None")
+        if not front_result:
+            return Response(
             {
                 "status": "success",
                 "order_number": str(order.order_number),
                 "receipt_url": payment.receipt_url,
-            },
-            status=200,
+                },
+                status=200,
+            )
+
+        query = urlencode(
+            {
+                "status": "success",
+                 "orderNumber": "str(order.order_number)",
+                 "receiptUrl": payment.receipt_url or "",
+             }
         )
+        url = f"{front_result}?{query}"
+
+        return redirect(url)
 
 
 @TossFailSchema
@@ -164,12 +182,29 @@ class TossFailBridge(APIView):
     permission_classes = [AllowAny]
 
     def get(self, request):
-        return Response(
+        code = request.query_params.get("code")
+        message = request.query_params.get("message")
+        order_id = request.query_params.get("orderId")
+
+        front_result = getattr(settings, "FRONT_RESULT_URL", None)
+        if not front_result:
+            return Response(
+                {
+                    "status": "fail",
+                    "code": code,
+                    "message": message,
+                    "orderId": order_id,
+                },
+                status=400,
+            )
+
+        query = urlencode(
             {
                 "status": "fail",
-                "code": request.query_params.get("code"),
-                "message": request.query_params.get("message"),
-                "orderId": request.query_params.get("orderId"),
-            },
-            status=400,
+                "code": code,
+                "message": message,
+                "orderId": order_id,
+            }
         )
+        url = f"{front_result}?{query}"
+        return redirect(url)
