@@ -46,7 +46,7 @@ def validate_rating(value):
 
 
 class ReviewSerializer(serializers.ModelSerializer):
-    product_id = serializers.IntegerField(source="product.id", read_only=True)
+    product_id = serializers.IntegerField(source="product.id")
     nickname = serializers.CharField(source="user.nickname", read_only=True)
 
     review_keyword = ReviewKeywordSerializer(many=True, read_only=True, source="review_keywords")
