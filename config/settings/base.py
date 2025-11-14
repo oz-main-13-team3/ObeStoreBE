@@ -210,7 +210,7 @@ ORDER_POINT_ROUND = "floor"
 # 토스
 TOSS_SECRET_KEY = os.getenv("TOSS_SECRET_KEY")
 TOSS_CLIENT_KEY = os.getenv("TOSS_CLIENT_KEY")
-
+FRONT_RESULT_URL = os.getenv("FRONT_RESULT_URL")
 
 def getenv_bool(key: str, default: bool = False) -> bool:
     v = os.getenv(key)
