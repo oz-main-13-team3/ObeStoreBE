@@ -93,8 +93,7 @@ def award_points_for_review(sender, instance: "Review", created: bool, **kwargs)
 
     def _apply():
         try:
-            with transaction.atomic():
-                apply_point_delta(user, reward, event_key=event_key)
+            apply_point_delta(user, reward, event_key=event_key)
         except PointError:
             pass
         except IntegrityError:
