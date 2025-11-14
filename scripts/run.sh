@@ -4,7 +4,7 @@ set -e
 export DJANGO_SETTINGS_MODULE=config.settings.prod
 
 echo "=== Clearing All Poetry Caches ==="
-RUN /root/.local/bin/poetry install --no-interaction --no-ansi --no-root \
+/root/.local/bin/poetry install --no-interaction --no-ansi --no-root \
     && rm -rf /root/.cache/pypoetry/* \
     && rm -rf /root/.cache/pip/*
 
