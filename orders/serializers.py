@@ -34,6 +34,7 @@ class OrderSerializer(serializers.ModelSerializer):
             "used_point",
             "order_status",
             "delivery_status",
+            "delivery_request",
             "order_products",
             "order_products_detail",
             "created_at",

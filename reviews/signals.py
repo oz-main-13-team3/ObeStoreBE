@@ -4,7 +4,8 @@ from decimal import ROUND_CEILING, ROUND_FLOOR, ROUND_HALF_UP, Decimal, InvalidO
 
 from django.conf import settings
 from django.db import transaction
-from django.db.models.signals import post_save
+from django.db.models import Avg
+from django.db.models.signals import post_delete, post_save
 from django.dispatch import receiver
 
 from users.services.points import PointError, apply_point_delta
@@ -99,3 +100,14 @@ def award_points_for_review(sender, instance: "Review", created: bool, **kwargs)
             pass
 
     transaction.on_commit(_apply)
+
+@receiver([post_save, post_delete], sender=Review)
+def update_product_rating(sender, instance, **kwargs):
+    product = instance.product
+    if product is None:
+        return
+
+    avg_rating = product.product_reviews.aggregate(avg=Avg("rating"))["avg"]
+
+    product.product_rating = avg_rating if avg_rating is not None else 0
+    product.save(update_fields=["product_rating"])
