@@ -16,7 +16,7 @@ class ProductFilter(filters.FilterSet):
     def filter_has_review(self, queryset, name, value):
         from django.db.models import Count
 
-        queryset = queryset.annotate(review_count=Count("review"))
+        queryset = queryset.annotate(review_count=Count("product_reviews"))
         if value:
             return queryset.filter(review_count__gt=0)
         else:
