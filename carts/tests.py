@@ -32,7 +32,7 @@ class CartModelTest(TestCase):
         )
 
         # 장바구니 생성
-        self.cart = Cart.objects.create(user=self.user)
+        self.cart = Cart.objects.get_or_create(user=self.user)
 
     def test_cart_creation(self):
         """장바구니가 정상적으로 생성되는지 확인"""
