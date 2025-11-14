@@ -21,7 +21,7 @@ class Keyword(models.Model):
 class Review(TimestampModel):
     review_title = models.CharField(max_length=50)
     content = models.TextField(null=False, blank=False)
-    rating = models.PositiveSmallIntegerField(default=5)
+    rating = models.DecimalField(max_digits=2, decimal_places=1, null=False, blank=False, default=0)
     product = models.ForeignKey(
         "products.Product", on_delete=models.SET_NULL, related_name="product_reviews", null=True
     )
