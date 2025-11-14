@@ -26,6 +26,7 @@ class Order(TimestampModel):
     subtotal = models.PositiveIntegerField(default=0, verbose_name="상품 총합")
     discount_amount = models.PositiveIntegerField(default=0, verbose_name="할인 금액")
     delivery_amount = models.PositiveIntegerField(default=0, verbose_name="배송비")
+    delivery_request = models.CharField(max_length=100, null=True, blank=True, verbose_name="배송 시 요청사항")
     total_payment = models.PositiveIntegerField(default=0, verbose_name="최종 결제 금액")
     used_point = models.IntegerField(default=0, verbose_name="사용된 적립금")
     order_status = models.CharField(max_length=15, choices=OrderStatus, default="접수 완료", verbose_name="주문상태")
