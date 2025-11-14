@@ -307,7 +307,7 @@ class SessionViewSet(viewsets.ViewSet):
             max_age=refresh_age,
             secure=secure,
             httponly=True,
-            samesite="Lax",
+            samesite="None",
             path="/",
         )
         resp.set_cookie(
@@ -316,7 +316,7 @@ class SessionViewSet(viewsets.ViewSet):
             max_age=access_age,
             secure=secure,
             httponly=True,
-            samesite="Lax",
+            samesite="None",
             path="/",
         )
         return resp
@@ -415,6 +415,7 @@ class NaverCallbackView(View):
     def get(self, request):
         code = request.GET.get("code")
         state = request.GET.get("state")
+        secure = not settings.DEBUG
 
         if not code:
             return JsonResponse({"error": "Missing authorization code."}, status=400)
@@ -485,6 +486,6 @@ class NaverCallbackView(View):
                 "login_type": "naver",
             }
         )
-        response.set_cookie("access_token", str(access), httponly=True, samesite="Lax")
-        response.set_cookie("refresh_token", str(refresh), httponly=True, samesite="Lax")
+        response.set_cookie("access_token", str(access), httponly=True, samesite="None", secure=secure)
+        response.set_cookie("refresh_token", str(refresh), httponly=True, samesite="None", secure=secure)
         return response
