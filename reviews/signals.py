@@ -3,11 +3,10 @@ from __future__ import annotations
 from decimal import ROUND_CEILING, ROUND_FLOOR, ROUND_HALF_UP, Decimal, InvalidOperation
 
 from django.conf import settings
-from django.db import transaction
+from django.db import IntegrityError, transaction
 from django.db.models import Avg
 from django.db.models.signals import post_delete, post_save
 from django.dispatch import receiver
-from psycopg import IntegrityError
 
 from users.services.points import PointError, apply_point_delta
 
@@ -104,11 +103,14 @@ def award_points_for_review(sender, instance: "Review", created: bool, **kwargs)
 
 @receiver([post_save, post_delete], sender=Review)
 def update_product_rating(sender, instance, **kwargs):
-    product = instance.product
-    if product is None:
+    product = getattr(instance, "product", None)
+    if not product:
         return
 
-    avg_rating = product.product_reviews.aggregate(avg=Avg("rating"))["avg"]
+    def _update():
+        avg_rating = product.product_reviews.aggregate(avg=Avg("rating"))["avg"]
+        product.product_rating = avg_rating or 0
+        product.save(update_fields=["product_rating"])
 
-    product.product_rating = avg_rating if avg_rating is not None else 0
-    product.save(update_fields=["product_rating"])
+    # commit 후 실행
+    transaction.on_commit(_update)
