@@ -25,7 +25,7 @@ class ProductViewSet(viewsets.ReadOnlyModelViewSet):
         if "review_count" in ordering_param:
             from django.db.models import Count
 
-            queryset = queryset.annotate(review_count=Count("review"))
+            queryset = queryset.annotate(review_count=Count("product_reviews"))
         return queryset
 
     def get_serializer_class(self):
