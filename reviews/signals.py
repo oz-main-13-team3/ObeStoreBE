@@ -7,6 +7,7 @@ from django.db import transaction
 from django.db.models import Avg
 from django.db.models.signals import post_delete, post_save
 from django.dispatch import receiver
+from psycopg import IntegrityError
 
 from users.services.points import PointError, apply_point_delta
 
@@ -96,7 +97,7 @@ def award_points_for_review(sender, instance: "Review", created: bool, **kwargs)
             apply_point_delta(user, reward, event_key=event_key)
         except PointError:
             pass
-        except (ValueError, TypeError):
+        except (ValueError, TypeError, IntegrityError):
             pass
 
     transaction.on_commit(_apply)
