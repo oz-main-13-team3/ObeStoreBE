@@ -22,7 +22,7 @@ from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.tokens import AccessToken, RefreshToken
 
 from .auth import blacklist_jti, is_blacklisted
-from .models import Address, Point
+from .models import Address, Point, SocialLogin
 from .serializers import (
     AddressSerializer,
     LoginSerializer,
@@ -461,6 +461,17 @@ class NaverCallbackView(View):
         if created:
             user.set_unusable_password()
             user.save()
+
+        provider_user_id = int(user_info.get("id"))
+        SocialLogin.objects.update_or_create(
+            user=user,
+            provider="naver",
+            provider_user_id=provider_user_id,
+            defaults={
+                "access_token": access_token,
+                "refresh_token": token_data.get("refresh_token", "")
+            }
+        )
 
         refresh = RefreshToken.for_user(user)
         access = str(refresh.access_token)
