@@ -6,8 +6,7 @@ from dotenv import load_dotenv
 from config.settings.base import *  # noqa
 
 DEBUG = False
-raw_hosts = os.getenv("ALLOWED_HOSTS", "[]")
-ALLOWED_HOSTS = ast.literal_eval(raw_hosts)
+ALLOWED_HOSTS = ast.literal_eval(os.getenv("ALLOWED_HOSTS", "[]"))
 
 load_dotenv()
 
@@ -63,7 +62,6 @@ STATIC_URL = f"https://{AWS_S3_CUSTOM_DOMAIN}/static/"
 MEDIA_URL = f"https://{AWS_S3_CUSTOM_DOMAIN}/media/"
 
 # CSRF
-raw_csrf_trusted_origins = os.getenv("CSRF_TRUSTED_ORIGINS", "[]")
-CSRF_TRUSTED_ORIGINS = ast.literal_eval(raw_csrf_trusted_origins)
+CSRF_TRUSTED_ORIGINS = ast.literal_eval(os.getenv("CSRF_TRUSTED_ORIGINS", "[]"))
 CSRF_COOKIE_SECURE = True
 SESSION_COOKIE_SECURE = True
