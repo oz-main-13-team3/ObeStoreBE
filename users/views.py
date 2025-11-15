@@ -31,6 +31,7 @@ from .serializers import (
     PointListSerializer,
     SignUpSerializer,
 )
+from .services.points import get_point_balance
 
 User = get_user_model()
 
@@ -234,8 +235,7 @@ class UsersViewSet(viewsets.ViewSet):
         detail=False, methods=["get"], url_path="me/points/balance", permission_classes=[permissions.IsAuthenticated]
     )
     def points_balance(self, request):
-        last = Point.objects.filter(user=request.user).order_by("-created_at", "-id").first()
-        current = last.amount if last else 0
+        current = get_point_balance(request.user)
         return Response({"balance": current}, status=200)
 
     @extend_schema(
