@@ -94,6 +94,7 @@ class Address(TimestampModel):
     post_code = models.CharField(max_length=10, verbose_name="우편번호")
     address = models.CharField(max_length=200, null=False, verbose_name="주소")
     detail_address = models.CharField(max_length=200, null=False, verbose_name="상세주소")
+    is_default = models.BooleanField(default=False, verbose_name="기본 배송지 여부")
 
     class Meta:
         verbose_name = "배송지"
