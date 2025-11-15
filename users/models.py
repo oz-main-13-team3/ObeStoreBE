@@ -108,8 +108,8 @@ class Address(TimestampModel):
 
 class Point(TimestampModel):
     user = models.ForeignKey(User, on_delete=models.CASCADE, null=False, related_name="points", verbose_name="회원번호")
-    amount = models.IntegerField(default=0, verbose_name="포인트 잔액")
-    balance = models.IntegerField(verbose_name="포인트 변화량")
+    balance = models.IntegerField(default=0, verbose_name="포인트 잔액")
+    amount = models.IntegerField(verbose_name="포인트 변화량")
 
     event_key = models.CharField(max_length=120, null=True, blank=True, unique=True, verbose_name="이벤트 키")
 
