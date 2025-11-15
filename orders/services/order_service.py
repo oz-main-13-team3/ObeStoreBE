@@ -1,5 +1,5 @@
 from django.db import transaction
-from rest_framework.exceptions import NotFound, ValidationError
+from rest_framework.exceptions import ValidationError
 
 from carts.models import CartItem
 from orders.models import Order, OrderProduct
@@ -13,14 +13,15 @@ class OrderService:
     @transaction.atomic
     def create_order(user, data):
         address_id = data.get("address")
-        if not address_id:
-            raise ValidationError({"address": "배송지 ID를 반드시 전달해야 합니다."})
 
-        address = Address.objects.filter(id=address_id).first()
-        if not address:
-            raise NotFound("해당 배송지를 찾을 수 없습니다.")
-        if address.user_id != user.id:
-            raise ValidationError({"address": "본인 주소만 선택할 수 있습니다."})
+        if address_id:
+            address = Address.objects.filter(id=address_id, user=user).first()
+            if not address:
+                raise ValidationError({"address": "본인 배송지만 사용할 수 있습니다."})
+        else:
+            address = Address.objects.filter(user=user, is_default=True).first()
+            if not address:
+                raise ValidationError({"address": "배송지 ID를 전달하지 않았고, 기본 배송지도 없습니다."})
 
         cart_items = CartItem.objects.filter(cart__user=user).select_related("product")
         if not cart_items.exists():

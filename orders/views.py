@@ -45,6 +45,7 @@ class OrderViewSet(viewsets.ModelViewSet):
         order = OrderService.create_order(request.user, request.data)
         return Response(
             {
+                "order_id": order.id,
                 "order_number": str(order.order_number),
                 "message": "주문이 생성되었습니다. 결제 진행 후 결제가 완료되면 장바구니가 비워집니다.",
                 "pay_amount": order.total_payment,
