@@ -174,6 +174,13 @@ class UsersViewSet(viewsets.ViewSet):
         except (BadSignature, User.DoesNotExist, KeyError, ValueError):
             return Response({"detail": "유효하지 않은 링크입니다."}, status=status.HTTP_400_BAD_REQUEST)
 
+    @action(detail=False, methods=["post"], url_path="email/exist", permission_classes=[permissions.AllowAny])
+    def is_email_exist(self, request):
+        typed_email = request.query_params.get("email")
+        if User.objects.filter(email=typed_email).exists():
+            return Response({"available": False, "detail": "이미 사용 중입니다."})
+        return Response({"available": True, "detail": "사용 가능한 이메일입니다."})
+
     # 포인트 내역 조회..
     @extend_schema(
         methods=["get"],
