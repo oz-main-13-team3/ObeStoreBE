@@ -9,9 +9,28 @@ class CartItemSerializer(serializers.ModelSerializer):
     price = serializers.ReadOnlyField(source="product.product_value")
     total_price = serializers.SerializerMethodField()
 
+    product_card_image = serializers.SerializerMethodField()
+
     class Meta:
         model = CartItem
-        fields = "__all__"
+        fields = [
+            "id",
+            "product_name",
+            "price",
+            "total_price",
+            "created_at",
+            "updated_at",
+            "amount",
+            "cart",
+            "product",
+            "product_card_image"
+        ]
+
+    def get_product_card_image(self, obj):
+        images = obj.product.product_images.all()
+        if not images.exists():
+            return None
+        return images.first().product_card_image.url
 
     @extend_schema_field(serializers.IntegerField())
     def get_total_price(self, obj):

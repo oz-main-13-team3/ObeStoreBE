@@ -31,6 +31,7 @@ from .serializers import (
     PointListSerializer,
     SignUpSerializer,
 )
+from .services.points import get_point_balance
 
 User = get_user_model()
 
@@ -174,6 +175,40 @@ class UsersViewSet(viewsets.ViewSet):
         except (BadSignature, User.DoesNotExist, KeyError, ValueError):
             return Response({"detail": "유효하지 않은 링크입니다."}, status=status.HTTP_400_BAD_REQUEST)
 
+    @extend_schema(
+        methods=["get"],
+        description="이메일 중복 여부 검사",
+        parameters=[
+            OpenApiParameter(
+                name="email",
+                type=str,
+                location="query",
+                description="중복을 검사할 이메일을 입력하세요.",
+                required=True,
+            ),
+        ],
+        responses=OpenApiResponse(
+            response=dict,
+            description="이메일 사용 가능 여부 반환",
+            examples=[
+                OpenApiExample(
+                    name="응답 형식",
+                    value={
+                        "available": "bool",
+                        "detail": "str"
+                    },
+                ),
+            ]
+        ),
+    )
+    @action(detail=False, methods=["get"], url_path="email/exist", permission_classes=[permissions.AllowAny])
+    def is_email_exist(self, request):
+        if typed_email := request.query_params.get("email"):
+            if not User.objects.filter(email=typed_email).exists():
+                return Response({"available": True, "detail": "사용 가능한 이메일입니다."})
+            return Response({"available": False, "detail": "이미 사용 중입니다."})
+        return Response({"available": False, "detail": "이메일을 입력해주세요."})
+
     # 포인트 내역 조회..
     @extend_schema(
         methods=["get"],
@@ -200,8 +235,7 @@ class UsersViewSet(viewsets.ViewSet):
         detail=False, methods=["get"], url_path="me/points/balance", permission_classes=[permissions.IsAuthenticated]
     )
     def points_balance(self, request):
-        last = Point.objects.filter(user=request.user).order_by("-created_at", "-id").first()
-        current = last.amount if last else 0
+        current = get_point_balance(request.user)
         return Response({"balance": current}, status=200)
 
     @extend_schema(

@@ -37,6 +37,7 @@ class AddressInline(admin.TabularInline):
         "post_code",
         "address",
         "detail_address",
+        "is_default",
         "created_at",
         "updated_at",
     )
@@ -141,9 +142,11 @@ class AddressAdmin(admin.ModelAdmin):
         "post_code",
         "address",
         "detail_address",
+        "is_default",
         "created_at",
         "updated_at",
     )
+    list_editable = ("is_default",)
     search_fields = ("user__email",)
     autocomplete_fields = ("user",)
     list_select_related = ("user",)

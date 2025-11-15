@@ -91,12 +91,30 @@ class MeSerializer(serializers.ModelSerializer):
 class AddressSerializer(serializers.ModelSerializer):
     class Meta:
         model = Address
-        fields = ["id", "address_name", "recipient", "recipient_phone", "post_code", "address", "detail_address"]
+        fields = ["id", "address_name", "recipient", "recipient_phone", "post_code", "address", "detail_address", "is_default"]
         read_only_fields = ["id"]
 
+    def _clear_other_defaults(self, user):
+        Address.objects.filter(user=user, is_default=True).update(is_default=False)
+
     def create(self, validated_data):
-        validated_data["user"] = self.context["request"].user
+        user = self.context["request"].user
+        validated_data["user"] = user
+        is_default = validated_data.get("is_default", False)
+
+        if not Address.objects.filter(user=user).exists():
+            validated_data["is_default"] = True
+        elif is_default:
+            self._clear_other_defaults(user)
         return super().create(validated_data)
+
+    def update(self, instance, validated_data):
+        user = instance.user
+        is_default = validated_data.get("is_default", None)
+
+        if is_default:
+            self._clear_other_defaults(user)
+        return super().update(instance, validated_data)
 
     def validate(self, attrs):
         return attrs
