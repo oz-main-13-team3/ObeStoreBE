@@ -11,8 +11,8 @@ class PointError(Exception):
 def apply_point_delta(user: User, delta: int, *, event_key: str | None) -> Point:
     user_locked = User.objects.select_for_update().get(pk=user.pk)
 
-    new_amount = user_locked.point_balance + delta
-    if new_amount < 0:
+    new_balance = user_locked.point_balance + delta
+    if new_balance < 0:
         raise PointError("포인트 잔액이 부족합니다.")
 
     if event_key:
@@ -20,8 +20,8 @@ def apply_point_delta(user: User, delta: int, *, event_key: str | None) -> Point
             user = user_locked,
             event_key = event_key,
             defaults={
-                "balance": delta,
-                "amount": new_amount,
+                "amount": delta,
+                "balance": new_balance,
             }
         )
         if not created:
@@ -29,12 +29,12 @@ def apply_point_delta(user: User, delta: int, *, event_key: str | None) -> Point
     else:
         point = Point.objects.create(
             user=user_locked,
-            balance=delta,
-            amount=new_amount,
+            amount=delta,
+            balance=new_balance,
             event_key=None,
         )
 
-    user_locked.point_balance = new_amount
+    user_locked.point_balance = new_balance
     user_locked.save(update_fields=["point_balance"])
 
     return point

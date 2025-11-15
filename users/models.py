@@ -94,6 +94,7 @@ class Address(TimestampModel):
     post_code = models.CharField(max_length=10, verbose_name="우편번호")
     address = models.CharField(max_length=200, null=False, verbose_name="주소")
     detail_address = models.CharField(max_length=200, null=False, verbose_name="상세주소")
+    is_default = models.BooleanField(default=False, verbose_name="기본 배송지 여부")
 
     class Meta:
         verbose_name = "배송지"
@@ -107,8 +108,8 @@ class Address(TimestampModel):
 
 class Point(TimestampModel):
     user = models.ForeignKey(User, on_delete=models.CASCADE, null=False, related_name="points", verbose_name="회원번호")
-    amount = models.IntegerField(default=0, verbose_name="포인트 잔액")
-    balance = models.IntegerField(verbose_name="포인트 변화량")
+    balance = models.IntegerField(default=0, verbose_name="포인트 잔액")
+    amount = models.IntegerField(verbose_name="포인트 변화량")
 
     event_key = models.CharField(max_length=120, null=True, blank=True, unique=True, verbose_name="이벤트 키")
 
