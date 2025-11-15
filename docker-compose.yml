@@ -12,6 +12,7 @@ services:
     container_name: web
     build: .
     command: sh /app/scripts/run.sh
+    restart: unless-stopped
     env_file:
       - ./envs/.env.prod
     environment:
