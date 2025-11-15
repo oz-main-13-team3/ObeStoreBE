@@ -181,6 +181,6 @@ pyrightconfig.json
 .venv/
 
 # Ignore migrations for your apps (but not Django default apps)
-**/migrations/*.py
-!**/migrations/__init__.py
-**/migrations/*.pyc
+# **/migrations/*.py
+# !**/migrations/__init__.py
+# /migrations/*.pyc
