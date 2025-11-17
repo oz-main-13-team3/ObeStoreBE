@@ -6,12 +6,12 @@ from django.shortcuts import redirect
 from drf_spectacular.utils import extend_schema
 from rest_framework import permissions, status, viewsets
 from rest_framework.exceptions import MethodNotAllowed
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from orders.models import Order, Payment
-from orders.schemas.order_schema import OrderSchema
+from orders.schemas.order_schema import OrderPreviewSchema, OrderSchema
 from orders.schemas.payment_schema import PaymentSchema, TossFailSchema, TossSuccessSchema
 from orders.serializers import OrderSerializer, PaymentSerializer, ReadyPaymentResponseSerializer
 from orders.services.order_service import OrderService
@@ -22,6 +22,13 @@ class IsOwnerOrAdmin(permissions.BasePermission):
     def has_object_permission(self, request, view, obj):
         return obj.user == request.user or request.user.is_staff
 
+@OrderPreviewSchema
+class OrderPreview(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        data = OrderService.preview_order(request.user, request.data)
+        return Response(data, status=status.HTTP_200_OK)
 
 @OrderSchema
 class OrderViewSet(viewsets.ModelViewSet):
@@ -155,7 +162,7 @@ class TossSuccessBridge(APIView):
 
         order = payment.order
 
-        front_result = getattr(settings, "FRONT_RESULT_URL, None")
+        front_result = getattr(settings, "FRONT_RESULT_URL", None)
         if not front_result:
             return Response(
             {
@@ -169,7 +176,7 @@ class TossSuccessBridge(APIView):
         query = urlencode(
             {
                 "status": "success",
-                 "orderNumber": "str(order.order_number)",
+                 "orderNumber": str(order.order_number),
                  "receiptUrl": payment.receipt_url or "",
              }
         )
