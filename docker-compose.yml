@@ -17,10 +17,13 @@ services:
       - ./envs/.env.prod
     environment:
       - DJANGO_SETTINGS_MODULE=config.settings.prod
+      - TZ=Asia/Seoul
     ports:
       - "8000:8000"
     volumes:
       - .:/app
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
     networks:
       - ws
 

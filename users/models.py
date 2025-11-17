@@ -67,7 +67,7 @@ class SocialLogin(TimestampModel):
 
     user = models.ForeignKey(User, on_delete=models.PROTECT, related_name="social_logins")
     provider = models.CharField(max_length=50, choices=PROVIDER_CHOICES, verbose_name="제공자")
-    provider_user_id = models.BigIntegerField(verbose_name="제공자 측 고유 ID")
+    provider_user_id = models.CharField(max_length=255, verbose_name="제공자 측 고유 ID")
     access_token = models.TextField(verbose_name="엑세스 토큰")
     refresh_token = models.TextField(verbose_name="리프레쉬 토큰")
     point_balance = models.IntegerField(default=0, verbose_name="포인트 잔액")

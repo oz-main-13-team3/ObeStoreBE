@@ -497,7 +497,7 @@ class NaverCallbackView(View):
             user.set_unusable_password()
             user.save()
 
-        provider_user_id = int(user_info.get("id"))
+        provider_user_id = user_info.get("id")
         SocialLogin.objects.update_or_create(
             user=user,
             provider="naver",
