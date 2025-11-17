@@ -1,3 +1,4 @@
+from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
 from users.models import Address
@@ -15,6 +16,7 @@ class OrderProductSerializer(serializers.ModelSerializer):
         fields = ["id", "product", "product_name", "amount", "price", "total_price", "product_card_image"]
         read_only_fields = ["price", "total_price"]
 
+    @extend_schema_field(str)
     def get_product_card_image(self, obj):
         images = obj.product.product_images.all()
         if not images.exists():

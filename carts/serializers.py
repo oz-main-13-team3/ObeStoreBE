@@ -26,6 +26,7 @@ class CartItemSerializer(serializers.ModelSerializer):
             "product_card_image"
         ]
 
+    @extend_schema_field(str)
     def get_product_card_image(self, obj):
         images = obj.product.product_images.all()
         if not images.exists():
