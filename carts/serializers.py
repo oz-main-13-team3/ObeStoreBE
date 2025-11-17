@@ -1,13 +1,12 @@
 from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
-from products.serializers import ProductListSerializer
-
 from .models import Cart, CartItem
 
 
 class CartItemSerializer(serializers.ModelSerializer):
-    product = ProductListSerializer(read_only=True)
+    product_name = serializers.ReadOnlyField(source="product.product_name")
+    price = serializers.ReadOnlyField(source="product.product_value")
     total_price = serializers.SerializerMethodField()
 
     product_card_image = serializers.SerializerMethodField()
@@ -16,12 +15,15 @@ class CartItemSerializer(serializers.ModelSerializer):
         model = CartItem
         fields = [
             "id",
-            "product",
+            "product_name",
+            "price",
             "total_price",
             "created_at",
             "updated_at",
             "amount",
             "cart",
+            "product",
+            "product_card_image"
         ]
 
     def get_product_card_image(self, obj):
@@ -32,7 +34,9 @@ class CartItemSerializer(serializers.ModelSerializer):
 
     @extend_schema_field(serializers.IntegerField())
     def get_total_price(self, obj):
-        return obj.product.product_value * obj.amount if obj.product else 0
+        if not obj.product:
+            return 0
+        return obj.product.product_value * obj.amount
 
 
 class CartSerializer(serializers.ModelSerializer):
