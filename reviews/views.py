@@ -1,6 +1,7 @@
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import status, viewsets
 from rest_framework.filters import OrderingFilter
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
 from reviews.filters import ReviewFilter
@@ -27,6 +28,11 @@ class ReviewViewSet(viewsets.ModelViewSet):
         from django.db.models import Count
 
         return Review.objects.annotate(product_review_count=Count("product__product_reviews"))
+
+    def get_permissions(self):
+        if self.action == "list":
+            return [AllowAny()]
+        return [IsAuthenticated()]
 
     @reviews_schema["create"]
     def create(self, request, *args, **kwargs):
