@@ -23,6 +23,7 @@ boto3 = "^1.40.67"
 django-cors-headers = "^4.9.0"
 drf-spectacular = "^0.29.0"
 drf-spectacular-sidecar = "^2025.10.1"
+django-extensions = "^4.1"
 
 [tool.poetry.group.dev.dependencies]
 ruff = "^0.14.3"
