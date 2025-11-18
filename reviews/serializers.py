@@ -1,4 +1,5 @@
 from django.db.models import Avg
+from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
 from .models import Keyword, Review, ReviewImage, ReviewKeyword
@@ -49,12 +50,6 @@ class ReviewSerializer(serializers.ModelSerializer):
     nickname = serializers.SerializerMethodField()
     product_name = serializers.SerializerMethodField()
 
-    def get_nickname(self, obj):
-        return getattr(obj.user, "nickname", None)
-
-    def get_product_name(self, obj):
-        return getattr(obj.product, "product_name", None)
-
     review_keyword = ReviewKeywordSerializer(many=True, read_only=True, source="review_keywords")
     review_image = ReviewImageSerializer(many=True, read_only=True, source="review_images")
 
@@ -64,7 +59,7 @@ class ReviewSerializer(serializers.ModelSerializer):
             "id",
             "review_title",
             "product",
-						"product_name",
+			"product_name",
             "nickname",
             "review_image",
             "review_keyword",
@@ -73,3 +68,60 @@ class ReviewSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
         ]
+
+    @extend_schema_field(str)
+    def get_nickname(self, obj):
+        return getattr(obj.user, "nickname", None)
+
+    @extend_schema_field(str)
+    def get_product_name(self, obj):
+        return getattr(obj.product, "product_name", None)
+
+class ReviewCreateSerializer(serializers.ModelSerializer):
+    keyword_ids = serializers.ListField(
+        child=serializers.IntegerField(),
+        write_only=True,
+        required=False
+    )
+
+    class Meta:
+        model = Review
+        fields = [
+            "review_title",
+            "content",
+            "rating",
+            "product",
+            "keyword_ids",
+        ]
+
+    def create(self, validated_data):
+        keyword_ids = validated_data.pop("keyword_ids", [])
+        user = self.context["request"].user
+
+        review = Review.objects.create(user=user, **validated_data)
+
+        if keyword_ids:
+            for kid in keyword_ids:
+                ReviewKeyword.objects.create(
+                    review=review,
+                    keyword_id=kid
+                )
+
+        return review
+
+    def update(self, instance, validated_data):
+        keyword_ids = validated_data.pop("keyword_ids", None)
+
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+
+        if keyword_ids is not None:
+            instance.reviewkeyword_set.all().delete()
+            for kid in keyword_ids:
+                ReviewKeyword.objects.create(
+                    review=instance,
+                    keyword_id=kid
+                )
+
+        return instance
