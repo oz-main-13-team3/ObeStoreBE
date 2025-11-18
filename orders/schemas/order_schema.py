@@ -33,6 +33,11 @@ OrderSchema = extend_schema_view(
                     allow_blank=True,
                     help_text="배송 시 요청사항"
                 ),
+                "cart_item_ids": serializers.ListField(
+                    child=serializers.IntegerField(),
+                    required=False,
+                    help_text="주문에 포함할 CartItem ID"
+                )
             },
         ),
         responses={
@@ -68,11 +73,12 @@ OrderPreviewSchema = extend_schema(
     request=inline_serializer(
         name="OrderPreviewRequest",
         fields={
-            "used_point": serializers.IntegerField(
+            "used_point": serializers.IntegerField(required=False, default=0),
+            "cart_item_ids": serializers.ListField(
+                child=serializers.IntegerField(),
                 required=False,
-                default=0,
-                help_text="사용할 포인트 (없으면 0)"
-            ),
+                help_text="주문에 포함할 CartItem ID 목록(없으면 장바구니 전체)"
+            )
         }
     ),
     responses=inline_serializer(
