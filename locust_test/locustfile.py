@@ -43,7 +43,7 @@ class WebUser(HttpUser):
     @task(3)
     def get_products(self):
         query = {
-            "search": random.choice(["나이키", "아디다스", "신발", None]),
+            "search": random.choice(["나이키", "아디다스", "신발"]),
             "min_price": random.choice([1000, None]),
             "max_price": random.choice([500000, None]),
             "ordering": random.choice(self.VALID_ORDER + [None]),
@@ -66,11 +66,12 @@ class WebUser(HttpUser):
     def review_create(self):
         if not self.VALID_PRODUCT_IDS:
             return
+
         payload = {
             "product": random.choice(self.VALID_PRODUCT_IDS),
             "review_title": "테스트 제목",
             "content": "리뷰 테스트 내용",
-            "rating": random.randint(1, 5),
+            "rating": random.choice([1.0, 2.0, 3.0, 4.0, 5.0]),  # decimal-safe
         }
         self.client.post("/reviews/", json=payload, headers=self.headers)
 
@@ -78,9 +79,10 @@ class WebUser(HttpUser):
     def qna_create(self):
         if not self.VALID_PRODUCT_IDS:
             return
+
         payload = {
             "product": random.choice(self.VALID_PRODUCT_IDS),
-            "question_type": "배송",
+            "question_type": random.choice(["inquiry", "suggestion"]),  # API choices
             "question_title": "언제오나요?",
             "question_content": "배송 관련 문의 드립니다.",
         }
@@ -88,9 +90,9 @@ class WebUser(HttpUser):
 
     @task(2)
     def qna_list(self):
-        qna_list = self.client.get("/qna/", headers=self.headers)
-        if qna_list.status_code == 200:
-            data = qna_list.json()
+        resp = self.client.get("/qna/", headers=self.headers)
+        if resp.status_code == 200:
+            data = resp.json()
             self.VALID_QNA_IDS = [q["id"] for q in data]
 
     @task(1)
