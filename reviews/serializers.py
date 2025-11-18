@@ -96,9 +96,7 @@ class ReviewCreateSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         keyword_ids = validated_data.pop("keyword_ids", [])
-        user = self.context["request"].user
-
-        review = Review.objects.create(user=user, **validated_data)
+        review = Review.objects.create(**validated_data)
 
         if keyword_ids:
             for kid in keyword_ids:
