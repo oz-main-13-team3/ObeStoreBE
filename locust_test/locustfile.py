@@ -1,23 +1,101 @@
+import random
+
 from locust import HttpUser, between, task
 
 
-class WebsiteUser(HttpUser):
+class WebUser(HttpUser):
+    host = "http://127.0.0.1:8000"
     wait_time = between(1, 3)
-    jwt: str | None = None
-    headers: dict | None = None
 
-    def index(self):
-        self.client.get("/")
-    @task
+    VALID_PRODUCT_IDS = []
+    VALID_QNA_IDS = []
+    VALID_ORDER = [
+        "sales", "-sales",
+        "product_value", "-product_value",
+        "created_at", "-created_at",
+        "review_count", "-review_count",
+    ]
+
     def on_start(self):
-        # 유저 로그인
-        resp = self.client.post(
-            "/auth/login",
-            json={"email": "test@test.com", "password": "test1234"},
-        )
-        self.jwt = resp.json()["access"]
-        self.headers = {"Authorization": f"Bearer {self.jwt}"}
+        payload = {
+            "email": "naver@naver.com",
+            "password": "gmail1423i",
+        }
+        resp = self.client.post("/auth/login", json=payload)
 
-    @task
+        if resp.status_code != 200:
+            print("로그인 실패 → 테스트 중단:", resp.text)
+            self.stop(True)
+            return
+
+        access = resp.json().get("access")
+        self.headers = {"Authorization": f"Bearer {access}"}
+
+        products = self.client.get("/products/").json()
+        self.VALID_PRODUCT_IDS = [p["id"] for p in products]
+
+        qnas = self.client.get("/qna/").json()
+        self.VALID_QNA_IDS = [q["id"] for q in qnas]
+
+    def _clean_query(self, q: dict):
+        return {k: v for k, v in q.items() if v not in ["", None]}
+
+    @task(3)
     def get_products(self):
-        self.client.get("/products", headers=self.headers)
+        query = {
+            "search": random.choice(["나이키", "아디다스", "신발", None]),
+            "min_price": random.choice([1000, None]),
+            "max_price": random.choice([500000, None]),
+            "ordering": random.choice(self.VALID_ORDER + [None]),
+        }
+        safe_query = self._clean_query(query)
+        self.client.get("/products/", params=safe_query, headers=self.headers)
+
+    @task(1)
+    def product_details(self):
+        if not self.VALID_PRODUCT_IDS:
+            return
+        product_id = random.choice(self.VALID_PRODUCT_IDS)
+        self.client.get(f"/products/{product_id}/", headers=self.headers)
+
+    @task(1)
+    def review_list(self):
+        self.client.get("/reviews/", headers=self.headers)
+
+    @task(1)
+    def review_create(self):
+        if not self.VALID_PRODUCT_IDS:
+            return
+        payload = {
+            "product": random.choice(self.VALID_PRODUCT_IDS),
+            "review_title": "테스트 제목",
+            "content": "리뷰 테스트 내용",
+            "rating": random.randint(1, 5),
+        }
+        self.client.post("/reviews/", json=payload, headers=self.headers)
+
+    @task(1)
+    def qna_create(self):
+        if not self.VALID_PRODUCT_IDS:
+            return
+        payload = {
+            "product": random.choice(self.VALID_PRODUCT_IDS),
+            "question_type": "배송",
+            "question_title": "언제오나요?",
+            "question_content": "배송 관련 문의 드립니다.",
+        }
+        self.client.post("/qna/", json=payload, headers=self.headers)
+
+    @task(2)
+    def qna_list(self):
+        qna_list = self.client.get("/qna/", headers=self.headers)
+        if qna_list.status_code == 200:
+            data = qna_list.json()
+            self.VALID_QNA_IDS = [q["id"] for q in data]
+
+    @task(1)
+    def qna_detail(self):
+        if not self.VALID_QNA_IDS:
+            return
+        qna_id = random.choice(self.VALID_QNA_IDS)
+        self.client.get(f"/qna/{qna_id}/", headers=self.headers)
