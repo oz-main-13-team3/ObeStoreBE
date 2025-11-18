@@ -10,6 +10,7 @@ from reviews.models import Keyword, Review, ReviewImage, ReviewKeyword
 from reviews.schema import reviews_schema
 from reviews.serializers import (
     KeywordSerializer,
+    ReviewCreateSerializer,
     ReviewImageSerializer,
     ReviewKeywordSerializer,
     ReviewSerializer,
@@ -60,6 +61,11 @@ class ReviewViewSet(viewsets.ModelViewSet):
         if serializer.validated_data.get("product") is None:
             raise ValidationError({"product": "상품은 필요입니다."})
         serializer.save(user=user)
+
+    def get_serializer_class(self):
+        if self.action in ["create", "update", "partial_update"]:
+            return ReviewCreateSerializer
+        return ReviewSerializer
 
     @reviews_schema["create"]
     def create(self, request, *args, **kwargs):
