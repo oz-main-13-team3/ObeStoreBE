@@ -1,4 +1,5 @@
 from decimal import Decimal
+from typing import Iterable, Optional
 
 from django.db import transaction
 from rest_framework.exceptions import ValidationError
@@ -11,6 +12,15 @@ from users.services.points import get_point_balance
 
 
 class OrderService:
+    @staticmethod
+    def _get_cart_items(user, cart_item_ids: Optional[Iterable[int]] = None):
+        qs = CartItem.objects.filter(cart__user=user)
+        if cart_item_ids:
+            qs = qs.filter(id__in=cart_item_ids)
+        if not qs.exists():
+            raise ValidationError({"cart": "선택된 장바구니가 비어 있습니다."})
+        return qs
+
     @staticmethod
     def compute_delivery_amount(subtotal: int) -> int:
         FREE_THRESHOLD = 50000
@@ -26,9 +36,11 @@ class OrderService:
 
     @staticmethod
     def preview_order(user, data):
-        cart_items = CartItem.objects.filter(cart__user=user).select_related("product")
-        if not cart_items.exists():
-            raise ValidationError({"cart": "장바구니가 비었습니다."})
+        cart_item_ids = data.get("cart_item_ids") or []
+        if cart_item_ids and not isinstance(cart_item_ids, (list, tuple)):
+            raise ValidationError({"cart_item_ids": "리스트 형태여야 합니다."})
+
+        cart_items = OrderService._get_cart_items(user, cart_item_ids)
 
         used_point = int(data.get("used_point") or 0)
 
@@ -92,9 +104,11 @@ class OrderService:
             if not address:
                 raise ValidationError({"address": "배송지 ID를 전달하지 않았고, 기본 배송지도 없습니다."})
 
-        cart_items = CartItem.objects.filter(cart__user=user).select_related("product")
-        if not cart_items.exists():
-            raise ValidationError({"cart": "장바구니가 비어 있습니다."})
+        cart_item_ids = data.get("cart_item_ids") or []
+        if cart_item_ids and not isinstance(cart_item_ids, (list, tuple)):
+            raise ValidationError({"cart_item_ids": "리스트 형태여야 합니다."})
+
+        cart_items = OrderService._get_cart_items(user, cart_item_ids)
 
         used_point = int(data.get("used_point") or 0)
         user_point = get_point_balance(user)

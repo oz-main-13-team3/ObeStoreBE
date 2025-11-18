@@ -1,5 +1,6 @@
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import status, viewsets
+from rest_framework.exceptions import NotAuthenticated, ValidationError
 from rest_framework.filters import OrderingFilter
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
@@ -22,7 +23,23 @@ class ReviewViewSet(viewsets.ModelViewSet):
     filterset_class = ReviewFilter
 
     ordering_fields = ["rating", "created_at", "product_review_count"]
-    ordering = ["-created_at"]  # 기본 정렬: 최신 등록순
+    ordering = ["-created_at"]
+
+    @reviews_schema["list"]
+    def list(self, request, *args, **kwargs):
+        ordering_parm = request.query_params.get("ordering")
+
+        if ordering_parm == "":
+            request.query_params._mutable = True
+            del request.query_params["ordering"]
+            request.query_params._mutable = False
+
+        if ordering_parm and ordering_parm.lstrip("-") not in self.ordering_fields:
+            request.query_params._mutable = True
+            del request.query_params["ordering"]
+            request.query_params._mutable = False
+
+        return super().list(request, *args, **kwargs)
 
     def get_queryset(self):
         from django.db.models import Count
@@ -34,13 +51,19 @@ class ReviewViewSet(viewsets.ModelViewSet):
             return [AllowAny()]
         return [IsAuthenticated()]
 
+    def perform_create(self, serializer):
+        user = self.request.user
+
+        if not user or user.is_anonymous:
+            raise NotAuthenticated("로그인이 필요합니다.")
+
+        if serializer.validated_data.get("product") is None:
+            raise ValidationError({"product": "상품은 필요입니다."})
+        serializer.save(user=user)
+
     @reviews_schema["create"]
     def create(self, request, *args, **kwargs):
         return super().create(request, *args, **kwargs)
-
-    @reviews_schema["list"]
-    def list(self, request, *args, **kwargs):
-        return super().list(request, *args, **kwargs)
 
     @reviews_schema["retrieve"]
     def retrieve(self, request, *args, **kwargs):

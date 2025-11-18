@@ -17,12 +17,16 @@ class ProductFilter(filters.FilterSet):
         from django.db.models import Count
 
         queryset = queryset.annotate(review_count=Count("product_reviews"))
+        if value is None:
+            return queryset
         if value:
             return queryset.filter(review_count__gt=0)
         else:
             return queryset.filter(review_count=0)
 
     def filter_has_dc_rate(self, queryset, name, value):
+        if value is None:
+            return queryset
         if value:
             return queryset.filter(discount_rate__gt=0)
         else:

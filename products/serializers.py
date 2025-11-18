@@ -58,7 +58,14 @@ class ProductListSerializer(serializers.ModelSerializer):
 
     @extend_schema_field(int)
     def get_dc_value(self, obj):
-        return int(obj.product_value * (1 - obj.discount_rate))
+        if obj.discount_rate in (None, 0):
+            return obj.product_value
+
+        try:
+            rate = float(obj.discount_rate)
+            return int(obj.product_value * (1 - rate))
+        except Exception:
+            return obj.product_value
 
 
 class ProductDetailSerializer(ProductListSerializer):
@@ -107,3 +114,8 @@ class ProductQnaSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
         ]
+    def get_username(self, obj):
+        return getattr(obj.user, "username", None)
+
+    def get_product_name(self, obj):
+        return getattr(obj.product, "product_name", None)

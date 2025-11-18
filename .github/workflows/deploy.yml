@@ -54,6 +54,7 @@ jobs:
             EOF
             
             docker compose up -d --build --pull=always
+            docker compose -f monitoring/docker-compose.yml up -d --build --pull=always
             
             # ---- 상태체크 ----
             docker compose ps
