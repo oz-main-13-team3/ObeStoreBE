@@ -1,6 +1,8 @@
+from django.db.models import Count
 from django_filters.rest_framework import DjangoFilterBackend
 from drf_spectacular.utils import OpenApiResponse, extend_schema, extend_schema_view
 from rest_framework import filters, viewsets
+from rest_framework.exceptions import NotFound, ValidationError
 from rest_framework.generics import ListAPIView
 from rest_framework.permissions import AllowAny, IsAdminUser, IsAuthenticated
 
@@ -18,14 +20,25 @@ class ProductViewSet(viewsets.ReadOnlyModelViewSet):
     ordering = ["-created_at"]
     permission_classes = [AllowAny]
 
+    def clean_parms(self, request):
+        parms = request.query_params.copy()
+
+        for p in ["ordering", "search", "min_price", "max_price"]:
+            if p in parms and parms[p] =="":
+                parms.pop(p)
+        request._request.GET = parms
+        return request
+
     def get_queryset(self):
+        self.request = self.clean_parms(self.request)
         queryset = Product.objects.select_related("category", "tag", "brand").all()
-        ordering_param = self.request.query_params.get("ordering", "")
+        ordering_param = self.request.query_params.get("ordering")
 
-        if "review_count" in ordering_param:
-            from django.db.models import Count
-
+        if ordering_param and ordering_param.lstrip("-") == "review_count":
             queryset = queryset.annotate(review_count=Count("product_reviews"))
+
+        if ordering_param and ordering_param.lstrip("-") not in self.ordering_fields:
+            raise ValidationError({"ordering": "지원하지않음"})
         return queryset
 
     def get_serializer_class(self):
@@ -44,6 +57,20 @@ class ProductViewSet(viewsets.ReadOnlyModelViewSet):
         responses=OpenApiResponse(ProductListSerializer),
     )
     def list(self, request, *args, **kwargs):
+        params = request.query_params.copy()
+        if params.get("ordering") == "":
+            params.pop("ordering")
+
+        if params.get("search") == "":
+            params.pop("search")
+
+        if params.get("min_price") == "":
+            params.pop("min_price")
+
+        if params.get("max_price") == "":
+            params.pop("max_price")
+
+        request._request.GET = params
         return super().list(request, *args, **kwargs)
 
     @extend_schema(
@@ -72,6 +99,12 @@ class ProductQnaViewSet(viewsets.ModelViewSet):
         else:
             permission_classes = []
         return [permission() for permission in permission_classes]
+
+    def get_object(self):
+        try:
+            return super().get_object()
+        except Exception:
+            raise NotFound({"detail": "Qna not found."})
 
     @extend_schema(
         summary="상품 모든 문의 조회",

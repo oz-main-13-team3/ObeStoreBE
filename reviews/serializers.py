@@ -46,7 +46,14 @@ def validate_rating(value):
 
 
 class ReviewSerializer(serializers.ModelSerializer):
-    nickname = serializers.CharField(source="user.nickname", read_only=True)
+    nickname = serializers.SerializerMethodField()
+    product_name = serializers.SerializerMethodField()
+
+    def get_nickname(self, obj):
+        return getattr(obj.user, "nickname", None)
+
+    def get_product_name(self, obj):
+        return getattr(obj.product, "product_name", None)
 
     review_keyword = ReviewKeywordSerializer(many=True, read_only=True, source="review_keywords")
     review_image = ReviewImageSerializer(many=True, read_only=True, source="review_images")
@@ -57,7 +64,7 @@ class ReviewSerializer(serializers.ModelSerializer):
             "id",
             "review_title",
             "product",
-            "user",
+						"product_name",
             "nickname",
             "review_image",
             "review_keyword",
