@@ -96,10 +96,22 @@ class ReviewCreateSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         keyword_ids = validated_data.pop("keyword_ids", [])
+
         review = Review.objects.create(**validated_data)
 
         if keyword_ids:
+            cleaned_keyword_ids = []
+
             for kid in keyword_ids:
+                if isinstance(kid, str) and kid.isdigit():
+                    try:
+                        cleaned_keyword_ids.append(int(kid))
+                    except ValueError:
+                        continue
+                elif isinstance(kid, int):
+                    cleaned_keyword_ids.append(kid)
+
+            for kid in cleaned_keyword_ids:
                 ReviewKeyword.objects.create(
                     review=review,
                     keyword_id=kid
