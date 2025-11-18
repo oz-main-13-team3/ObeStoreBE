@@ -32,6 +32,7 @@ RUN mkdir -p /app/static
 
 # 실행 스크립트 권한 부여
 RUN chmod +x /app/scripts/run.sh
+RUN chmod +x /app/scripts/node_metrics.sh
 
 # 포트 설정
 EXPOSE 8000
