@@ -165,10 +165,11 @@ class TossSuccessBridge(APIView):
         front_result = getattr(settings, "FRONT_RESULT_URL", None)
         if not front_result:
             return Response(
-            {
-                "status": "success",
-                "order_number": str(order.order_number),
-                "receipt_url": payment.receipt_url,
+                {
+                    "status": "success",
+                    "order_number": str(order.order_number),
+                    "orderId": order.id,
+                    "receipt_url": payment.receipt_url,
                 },
                 status=200,
             )
@@ -176,9 +177,10 @@ class TossSuccessBridge(APIView):
         query = urlencode(
             {
                 "status": "success",
-                 "orderNumber": str(order.order_number),
-                 "receiptUrl": payment.receipt_url or "",
-             }
+                "orderNumber": str(order.order_number),
+                "orderId": order.id,
+                "receiptUrl": payment.receipt_url or "",
+            }
         )
         url = f"{front_result}?{query}"
 
