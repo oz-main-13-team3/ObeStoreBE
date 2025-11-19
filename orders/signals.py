@@ -4,11 +4,12 @@ from decimal import ROUND_CEILING, ROUND_FLOOR, ROUND_HALF_UP, Decimal
 
 from django.conf import settings
 from django.db import transaction
-from django.db.models.signals import pre_save
+from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
 
 from carts.services import clear_user_cart
-from orders.models import Order
+from orders.models import Order, Payment
+from products.models import Product
 from users.services.points import PointError, apply_point_delta
 
 
@@ -92,3 +93,25 @@ def _on_order_completed(sender, instance: Order, **kwargs):
             pass
 
     transaction.on_commit(_after_commit)
+
+@receiver(post_save, sender=Payment)
+def increase_sales_on_payment_success(sender, instance, created, **kwargs):
+    if instance.payment_status != "success":
+        return
+
+    if not created and instance._state.adding is False:
+        pass
+
+    order = instance.order
+    ops = list(order.order_products.select_related("product").all())
+
+    product_updates = []
+
+    for op in ops:
+        product = op.product
+        if product:
+            product.sales = (product.sales or 0) + op.amount
+            product_updates.append(product)
+
+    if product_updates:
+        Product.objects.bulk_update(product_updates, ["sales"])

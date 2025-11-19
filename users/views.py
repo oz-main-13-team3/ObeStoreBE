@@ -328,26 +328,19 @@ class SessionViewSet(viewsets.ViewSet):
     def login(self, request):
         ser = LoginSerializer(data=request.data, context={"request": request})
         ser.is_valid(raise_exception=True)
-        tokens = ser.save()
 
-        resp = Response({"access": tokens["access"]}, status=200)
+        user = ser.validated_data["user"]
+        refresh = RefreshToken.for_user(user)
+        access = str(refresh.access_token)
+
+        resp = Response({"access": access}, status=200)
         secure = not settings.DEBUG
         refresh_age = int(settings.SIMPLE_JWT["REFRESH_TOKEN_LIFETIME"].total_seconds())
-        access_age = int(settings.SIMPLE_JWT["ACCESS_TOKEN_LIFETIME"].total_seconds())
 
         resp.set_cookie(
             "refresh_token",
-            tokens["refresh"],
+            str(refresh),
             max_age=refresh_age,
-            secure=secure,
-            httponly=True,
-            samesite="None",
-            path="/",
-        )
-        resp.set_cookie(
-            "access_token",
-            tokens["access"],
-            max_age=access_age,
             secure=secure,
             httponly=True,
             samesite="None",
@@ -518,8 +511,9 @@ class NaverCallbackView(View):
                 "username": name,
                 "nickname": nickname,
                 "login_type": "naver",
+                "access": access,
             }
         )
-        response.set_cookie("access_token", str(access), httponly=True, samesite="None", secure=secure)
+
         response.set_cookie("refresh_token", str(refresh), httponly=True, samesite="None", secure=secure)
         return response
