@@ -9,6 +9,7 @@ from .models import Cart, CartItem
 class CartItemSerializer(serializers.ModelSerializer):
     product_name = serializers.ReadOnlyField(source="product.product_name")
     price = serializers.ReadOnlyField(source="product.product_value")
+    discount_amount = serializers.SerializerMethodField()
     total_price = serializers.SerializerMethodField()
 
     product_card_image = serializers.SerializerMethodField()
@@ -23,6 +24,7 @@ class CartItemSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
             "amount",
+            "discount_amount",
             "cart",
             "product",
             "product_card_image"
@@ -42,6 +44,8 @@ class CartItemSerializer(serializers.ModelSerializer):
             return 0
         return obj.product.product_value * obj.amount
 
+    def get_discount_amount(self, obj):
+        return int(obj.product.product_value * obj.product.discount_rate)
 
 class CartSerializer(serializers.ModelSerializer):
     items = CartItemSerializer(many=True, read_only=True)
