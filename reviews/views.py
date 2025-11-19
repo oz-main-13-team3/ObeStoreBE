@@ -5,6 +5,7 @@ from rest_framework.filters import OrderingFilter
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
+from orders.models import Order, OrderProduct
 from reviews.filters import ReviewFilter
 from reviews.models import Keyword, Review, ReviewImage, ReviewKeyword
 from reviews.schema import reviews_schema
@@ -58,14 +59,46 @@ class ReviewViewSet(viewsets.ModelViewSet):
         if not user or user.is_anonymous:
             raise NotAuthenticated("로그인이 필요합니다.")
 
-        if serializer.validated_data.get("product") is None:
-            raise ValidationError({"product": "상품은 필요입니다."})
+        product = serializer.validated_data.get("product")
+
+        if product is None:
+            raise ValidationError({"product": "상품은 필수입니다."})
+
+        writable, message = self.check_writable(product)
+
+        if not writable:
+            raise ValidationError({"detail": message})
+
         serializer.save(user=user)
 
     def get_serializer_class(self):
         if self.action in ["create", "update", "partial_update"]:
             return ReviewCreateSerializer
         return ReviewSerializer
+
+    def check_writable(self, product):
+        user = self.request.user
+
+        if not user or user.is_anonymous:
+            return False, "로그인이 필요합니다."
+
+        if Review.objects.filter(user=user, product=product).exists():
+            return False, "이미 해당 상품에 대한 리뷰를 작성했습니다."
+
+        delivered_orders = Order.objects.filter(
+            user=user,
+            delivery_status="배송 완료"
+        )
+
+        purchased = OrderProduct.objects.filter(
+            order__in=delivered_orders,
+            product=product
+        ).exists()
+
+        if not purchased:
+            return False, "상품 구매 이력이 없거나 배송이 완료되지 않았습니다."
+
+        return True, "리뷰 작성이 가능합니다."
 
     @reviews_schema["create"]
     def create(self, request, *args, **kwargs):
