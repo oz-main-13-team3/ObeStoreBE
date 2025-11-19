@@ -42,6 +42,7 @@ class CartItem(TimestampModel):
         ordering = ["-created_at"]
         verbose_name = "장바구니 상품"
         verbose_name_plural = "장바구니 상품 목록"
+        unique_together = ("cart", "product")
 
     def __str__(self):
         return f"[{self.cart.user.nickname} 카트] {self.product.product_name} 상품 | {self.amount} 개"
