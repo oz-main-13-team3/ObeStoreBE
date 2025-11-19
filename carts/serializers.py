@@ -25,6 +25,7 @@ class CartItemSerializer(serializers.ModelSerializer):
             "product",
             "product_card_image"
         ]
+        read_only_fields = ["cart"]
 
     @extend_schema_field(str)
     def get_product_card_image(self, obj):
