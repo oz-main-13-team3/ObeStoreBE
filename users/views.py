@@ -7,7 +7,7 @@ from django.contrib.auth import get_user_model
 from django.core import signing
 from django.core.mail import EmailMultiAlternatives
 from django.core.signing import BadSignature, SignatureExpired
-from django.http import HttpResponse, HttpResponseRedirect, JsonResponse
+from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect
 from django.template.loader import render_to_string
 from django.utils.crypto import get_random_string
@@ -461,7 +461,7 @@ class NaverCallbackView(View):
 
         access_token = token_data.get("access_token")
         if not access_token:
-            return HttpResponse("Failed to get Naver access token", status=400)
+            return JsonResponse({"error": "Failed to get access token.", "detail": token_data}, status=400)
 
         profile_url = "https://openapi.naver.com/v1/nid/me"
         headers = {"Authorization": f"Bearer {access_token}"}
@@ -475,7 +475,7 @@ class NaverCallbackView(View):
         phone_number = user_info.get("mobile", "").replace("-", "")
 
         if not email:
-            return HttpResponse("Email not provided", status=400)
+            return JsonResponse({"error": "Email not provided by Naver."}, status=400)
 
         user, created = User.objects.get_or_create(
             email=email,
@@ -504,9 +504,16 @@ class NaverCallbackView(View):
         refresh = RefreshToken.for_user(user)
         access = str(refresh.access_token)
 
-        response = HttpResponseRedirect(
-            redirect_to=f"https://obe-store.vercel.app/auth/naver/callback?access={access}"
+        response = JsonResponse(
+            {
+                "message": "Naver login success",
+                "email": email,
+                "username": name,
+                "nickname": nickname,
+                "login_type": "naver",
+                "access": access,
+            }
         )
 
-        response.set_cookie("refresh_token", str(refresh), httponly=True, samesite="None", secure=secure, path="/")
+        response.set_cookie("refresh_token", str(refresh), httponly=True, samesite="None", secure=secure)
         return response
