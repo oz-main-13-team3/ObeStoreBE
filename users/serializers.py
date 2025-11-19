@@ -13,10 +13,11 @@ class SignUpSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(
         validators=[UniqueValidator(queryset=User.objects.all(), message="이미 등록된 이메일입니다.")]
     )
+    email_checked = serializers.BooleanField(write_only=True, required=False)
 
     class Meta:
         model = User
-        fields = ["email", "password", "username", "nickname", "phone_number"]
+        fields = ["email", "password", "username", "nickname", "phone_number", "email_checked"]
         extra_kwargs = {
             "password": {"write_only": True},
         }
@@ -24,11 +25,17 @@ class SignUpSerializer(serializers.ModelSerializer):
     def validate_email(self, value):
         return value.strip().lower()
 
+    def validate(self, attrs):
+        if not attrs.get("email_checked"):
+            raise serializers.ValidationError({"email_checked": "이메일 중복 확인을 먼저 진행해주세요."})
+        return attrs
+
     def validate_password(self, value):
         password_validation.validate_password(value)
         return value
 
     def create(self, validated_data):
+        validated_data.pop("email_checked", None)
         pwd = validated_data.pop("password")
         try:
             user = User.objects.create_user(password=pwd, **validated_data, status="ready")
@@ -82,10 +89,18 @@ class MeUpdateSerializer(serializers.ModelSerializer):
 
 
 class MeSerializer(serializers.ModelSerializer):
+    login_type = serializers.SerializerMethodField()
+
     class Meta:
         model = User
-        fields = ["email", "username", "nickname", "phone_number"]
-        read_only_fields = ["email", "username", "nickname", "phone_number"]
+        fields = ["email", "username", "nickname", "phone_number","login_type"]
+        read_only_fields = ["email", "username", "nickname", "phone_number", "login_type"]
+
+    def get_login_type(self, obj):
+        social_login = obj.social_logins.first()
+        if social_login:
+            return social_login.provider
+        return "email"
 
 
 class AddressSerializer(serializers.ModelSerializer):
