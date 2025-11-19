@@ -82,10 +82,18 @@ class MeUpdateSerializer(serializers.ModelSerializer):
 
 
 class MeSerializer(serializers.ModelSerializer):
+    login_type = serializers.SerializerMethodField()
+
     class Meta:
         model = User
-        fields = ["email", "username", "nickname", "phone_number"]
-        read_only_fields = ["email", "username", "nickname", "phone_number"]
+        fields = ["email", "username", "nickname", "phone_number","login_type"]
+        read_only_fields = ["email", "username", "nickname", "phone_number", "login_type"]
+
+    def get_login_type(self, obj):
+        social_login = obj.social_logins.first()
+        if social_login:
+            return social_login.provider
+        return "email"
 
 
 class AddressSerializer(serializers.ModelSerializer):

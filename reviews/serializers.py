@@ -84,6 +84,12 @@ class ReviewCreateSerializer(serializers.ModelSerializer):
         required=False
     )
 
+    review_images = serializers.ListField(
+        child=serializers.ImageField(),
+        write_only=True,
+        required=False
+    )
+
     class Meta:
         model = Review
         fields = [
@@ -92,24 +98,44 @@ class ReviewCreateSerializer(serializers.ModelSerializer):
             "rating",
             "product",
             "keyword_ids",
+            "review_images"
         ]
 
     def create(self, validated_data):
         keyword_ids = validated_data.pop("keyword_ids", [])
-        user = self.context["request"].user
+        request = self.context.get("request")
 
-        review = Review.objects.create(user=user, **validated_data)
+        review = Review.objects.create(**validated_data)
 
         if keyword_ids:
+            cleaned_keyword_ids = []
+
             for kid in keyword_ids:
+                if isinstance(kid, str) and kid.isdigit():
+                    try:
+                        cleaned_keyword_ids.append(int(kid))
+                    except ValueError:
+                        continue
+                elif isinstance(kid, int):
+                    cleaned_keyword_ids.append(kid)
+
+            for kid in cleaned_keyword_ids:
                 ReviewKeyword.objects.create(
                     review=review,
                     keyword_id=kid
                 )
 
+        if request and request.FILES:
+            images = request.FILES.getlist("review_image")
+            for img in images:
+                ReviewImage.objects.create(
+                    review=review,
+                    review_image=img
+                )
         return review
 
     def update(self, instance, validated_data):
+        request = self.context.get("request")
         keyword_ids = validated_data.pop("keyword_ids", None)
 
         for attr, value in validated_data.items():
@@ -124,4 +150,11 @@ class ReviewCreateSerializer(serializers.ModelSerializer):
                     keyword_id=kid
                 )
 
+        if request and request.FILES:
+            images = request.FILES.getlist("review_image")
+            for img in images:
+                ReviewImage.objects.create(
+                    review=instance,
+                    review_image=img
+                )
         return instance
