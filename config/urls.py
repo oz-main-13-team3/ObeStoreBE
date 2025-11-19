@@ -16,6 +16,7 @@ urlpatterns = [
         name="qna-detail",
     ),
     path("", include("orders.urls")),
+    path("", include("wishlists.urls")),
     path("reviews/", include("reviews.urls")),
     # OpenAPI JSON Schema
     path("schema/", SpectacularAPIView.as_view(), name="schema"),
