@@ -1,6 +1,8 @@
 from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
+from orders.services.order_service import OrderService
+
 from .models import Cart, CartItem
 
 
@@ -43,17 +45,28 @@ class CartItemSerializer(serializers.ModelSerializer):
 
 class CartSerializer(serializers.ModelSerializer):
     items = CartItemSerializer(many=True, read_only=True)
-    total_price = serializers.SerializerMethodField()
+    subtotal = serializers.SerializerMethodField()
+    discount_amount = serializers.SerializerMethodField()
+    delivery_amount = serializers.SerializerMethodField()
+    total_payment = serializers.SerializerMethodField()
 
     class Meta:
         model = Cart
         fields = "__all__"
         read_only_fields = ["user"]
 
-    @extend_schema_field(serializers.IntegerField())
-    def get_total_price(self, obj):
-        total = 0
-        for item in obj.items.all():
-            if item.product:
-                total += item.product.product_value * item.amount
-        return total
+    def get_cart_preview(self, obj):
+        data = {"cart_item_ids": [item.id for item in obj.items.all()]}
+        return OrderService.preview_order(obj.user, data)
+
+    def get_subtotal(self, obj):
+        return self.get_cart_preview(obj)["subtotal"]
+
+    def get_discount_amount(self, obj):
+        return self.get_cart_preview(obj)["discount_amount"]
+
+    def get_delivery_amount(self, obj):
+        return self.get_cart_preview(obj)["delivery_amount"]
+
+    def get_total_payment(self, obj):
+        return self.get_cart_preview(obj)["total_payment"]
