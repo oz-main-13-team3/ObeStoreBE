@@ -2,6 +2,7 @@ from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
 from products.models import BrandImage, Product, ProductImage, ProductQna
+from wishlists.models import Wishlist
 
 
 class ProductImageSerializer(serializers.ModelSerializer):
@@ -70,15 +71,26 @@ class ProductListSerializer(serializers.ModelSerializer):
 
 class ProductDetailSerializer(ProductListSerializer):
     reviews = serializers.SerializerMethodField()
+    wishes = serializers.SerializerMethodField()
+    is_wished = serializers.SerializerMethodField()
 
     class Meta(ProductListSerializer.Meta):
-        fields = ProductListSerializer.Meta.fields + ["reviews"]
+        fields = ProductListSerializer.Meta.fields + ["reviews", "wishes", "is_wished"]
 
     def get_reviews(self, obj):
         from reviews.serializers import ReviewSerializer  # 순환 참조 방지
 
         queryset = obj.product_reviews.all()
         return ReviewSerializer(queryset, many=True, context=self.context).data
+
+    def get_wishes(self, obj):
+        return Wishlist.objects.filter(product=obj).count()
+
+    def get_is_wished(self, obj):
+        user = self.context["request"].user
+        if not user.is_authenticated:
+            return False
+        return Wishlist.objects.filter(product=obj, user=user).exists()
 
 
 class ProductQnaCreateSerializer(serializers.ModelSerializer):
