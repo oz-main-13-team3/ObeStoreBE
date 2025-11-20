@@ -11,13 +11,14 @@ from .serializers import WishlistSerializer
 
 class WishlistViewSet(viewsets.ViewSet):
     permission_classes = [permissions.IsAuthenticated]
+    serializer_class = WishlistSerializer
 
     # GET /users/me/wishlist
     @wishlists_schema["list"]
     def list(self, request):
         queryset = Wishlist.objects.filter(user=request.user)
         serializer = WishlistSerializer(queryset, many=True, context={"request": request})
-        return serializer.data
+        return Response(serializer.data)
 
     # POST /users/me/wishlist
     @wishlists_schema["create"]
@@ -57,7 +58,7 @@ class WishlistViewSet(viewsets.ViewSet):
     @wishlists_schema["destroy"]
     def destroy(self, request, pk=None):
         try:
-            wishlist_item = Wishlist.objects.get(pk=pk, user=request.user)
+            wishlist_item = Wishlist.objects.get(product_id=pk, user=request.user)
             wishlist_item.delete()
             return Response(status=status.HTTP_204_NO_CONTENT)
         except Wishlist.DoesNotExist:

@@ -32,6 +32,9 @@ class ProductListSerializer(serializers.ModelSerializer):
 
     dc_value = serializers.SerializerMethodField()
 
+    wishes = serializers.SerializerMethodField()
+    is_wished = serializers.SerializerMethodField()
+
     product_image = ProductImageSerializer(many=True, read_only=True, source="product_images")
     brand_image = BrandImageSerializer(many=True, read_only=True, source="brand.brand_images")
 
@@ -55,6 +58,8 @@ class ProductListSerializer(serializers.ModelSerializer):
             "brand_name",
             "product_image",
             "brand_image",
+            "wishes",
+            "is_wished"
         ]
 
     @extend_schema_field(int)
@@ -68,21 +73,6 @@ class ProductListSerializer(serializers.ModelSerializer):
         except Exception:
             return obj.product_value
 
-
-class ProductDetailSerializer(ProductListSerializer):
-    reviews = serializers.SerializerMethodField()
-    wishes = serializers.SerializerMethodField()
-    is_wished = serializers.SerializerMethodField()
-
-    class Meta(ProductListSerializer.Meta):
-        fields = ProductListSerializer.Meta.fields + ["reviews", "wishes", "is_wished"]
-
-    def get_reviews(self, obj):
-        from reviews.serializers import ReviewSerializer  # 순환 참조 방지
-
-        queryset = obj.product_reviews.all()
-        return ReviewSerializer(queryset, many=True, context=self.context).data
-
     def get_wishes(self, obj):
         return Wishlist.objects.filter(product=obj).count()
 
@@ -91,6 +81,19 @@ class ProductDetailSerializer(ProductListSerializer):
         if not user.is_authenticated:
             return False
         return Wishlist.objects.filter(product=obj, user=user).exists()
+
+
+class ProductDetailSerializer(ProductListSerializer):
+    reviews = serializers.SerializerMethodField()
+
+    class Meta(ProductListSerializer.Meta):
+        fields = ProductListSerializer.Meta.fields + ["reviews"]
+
+    def get_reviews(self, obj):
+        from reviews.serializers import ReviewSerializer  # 순환 참조 방지
+
+        queryset = obj.product_reviews.all()
+        return ReviewSerializer(queryset, many=True, context=self.context).data
 
 
 class ProductQnaCreateSerializer(serializers.ModelSerializer):
