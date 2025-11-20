@@ -53,7 +53,7 @@
 
 ### :wrench: System Architecture
 
-<img src="https://user-images.githubusercontent.com/90237119/215304129-d8006105-cf1c-49c7-a819-4f819dfac523.png"/>
+<img width="1386" height="800" src="https://github.com/user-attachments/assets/264722a8-9ee1-4fa5-b2cb-312340e3f770" />
 
 ### FE
 <div align=center>
